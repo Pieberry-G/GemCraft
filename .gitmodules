@@ -1,0 +1,12 @@
+[submodule "deps/cgal"]
+	path = deps/cgal
+	url = https://github.com/CGAL/cgal.git
+[submodule "deps/geometry-central"]
+	path = deps/geometry-central
+	url = https://github.com/nmwsharp/geometry-central.git
+[submodule "deps/polyscope"]
+	path = deps/polyscope
+	url = https://github.com/Pieberry-G/polyscope.git
+[submodule "deps/spdlog"]
+	path = deps/spdlog
+	url = https://github.com/gabime/spdlog.git
