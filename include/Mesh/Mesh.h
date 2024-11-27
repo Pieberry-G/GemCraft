@@ -21,11 +21,9 @@ namespace GemCraft {
         const std::vector<std::vector<size_t>>& GetFaces() const { return m_Faces; }
         polyscope::SurfaceMesh* GetPsMesh() const { return m_PsMesh; }
         glm::mat4 GetPsTransform() const { return m_PsMesh ? m_PsMesh->getTransform() : glm::mat4(1.0f); }
-        bool GetBooleanOpLock() const { return m_BooleanOpLock; }
 
         // Set
         void SetName(const std::string& name) { m_Name = name; }
-        void SetBooleanOpLock(bool booleanOpLock) { m_BooleanOpLock = booleanOpLock; }
 
         // polyscope
         void AddToPolyscope(const glm::mat4& transform = glm::mat4(1.0f));
@@ -38,8 +36,6 @@ namespace GemCraft {
         std::vector<std::vector<size_t>> m_Faces;
 
         polyscope::SurfaceMesh* m_PsMesh = nullptr;
-
-        bool m_BooleanOpLock = false;
     };
 
 } // namespace GemCraft

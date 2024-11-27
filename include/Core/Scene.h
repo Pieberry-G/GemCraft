@@ -2,13 +2,16 @@
 
 #include "Mesh/Mesh.h"
 #include "Mesh/Geodesic.h"
-#include "Mesh/GemSettingType.h"
+#include "Mesh/GemSetting.h"
+#include "Mesh/GemLine.h"
 #include "Panels/CustomUI.h"
 
 namespace GemCraft {
 
 	class Scene
 	{
+		friend class PlacerTool;
+		friend class BooleanTool;
 	public:
 		Scene();
 
@@ -17,20 +20,15 @@ namespace GemCraft {
 		void InitGeodesic();
 
 		void AddRing(const std::string& name, const std::string& filepath);
-		void AddGem(const std::string& name, const std::string& filepath, const glm::mat4& transform = glm::mat4(1.0f));
-		void AddGem(const std::string& name, const std::string& filepath, const glm::vec3& position, const glm::vec3& forward, const glm::vec3& direction);
-
-		void AddGemSetting(const std::string& name, GemSettingType gemSetting, const glm::mat4& transform = glm::mat4(1.0f));
-		void AddGemSetting(const std::string& name, GemSettingType gemSetting, const glm::vec3& position, const glm::vec3& forward, const glm::vec3& direction);
+		void PlaceGemsOnPath();
 
 		std::shared_ptr<Mesh> GetRing() { return m_Ring; }
 
-		void AdornStrokeWithGems();
-		void PlaceGemsOnPath();
+	private:
+		//void AdornStrokeWithGems();
 		void BooleanOpDifference();
 		void ConstructGeodesicPath();
 
-	private:
 		void ShowRingStroke();
 		void ShowRingSelected();
 		void ShowSourcePoint();
@@ -38,8 +36,7 @@ namespace GemCraft {
 
 	private:
 		std::shared_ptr<Mesh> m_Ring;
-		std::vector<std::shared_ptr<Mesh>> m_Gems;
-		std::vector<std::shared_ptr<Mesh>> m_GemSettings;
+		std::vector<GemLine> m_GemLines;
 
 		std::unique_ptr<Geodesic> m_Geodesic;
 		std::vector<Path> m_GeodesicPaths;

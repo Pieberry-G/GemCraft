@@ -33,6 +33,14 @@ namespace GemCraft {
         return meshCopy;
     }
 
+    std::shared_ptr<Mesh> ResourceManager::CreateMandrel()
+    {
+        const Mesh& meshOrigin = *m_Mandrel->GetMesh();
+        std::shared_ptr<Mesh> meshCopy = std::make_shared<Mesh>(meshOrigin);
+
+        return meshCopy;
+    }
+
     void ResourceManager::PreloadGems()
     {
         static const std::string s_GemFolder = "../assets/Gems/";
@@ -74,6 +82,14 @@ namespace GemCraft {
         LoadGemSetting(GemSettingType::Prong);
         LoadGemSetting(GemSettingType::Claw);
         LoadGemSetting(GemSettingType::Invisible);
+        LoadGemSetting(GemSettingType::Shovel);
+        LoadGemSetting(GemSettingType::Channel);
+    }
+
+    void ResourceManager::PreloadMandrel()
+    {
+        Mesh* mesh = new Mesh("Mandrel", "../assets/GemSettings/Mandrel.obj");
+        m_Mandrel = new MeshResource("Mandrel", nullptr, mesh);
     }
 
     void ResourceManager::LoadGemSetting(GemSettingType settingType)
@@ -101,6 +117,13 @@ namespace GemCraft {
                 meshPath = s_GemSettingFolder + "ClawSetting.obj";
                 iconPath = s_GemSettingFolder + "ClawSetting.png";
                 break;
+            case GemSettingType::Shovel:
+                meshPath = s_GemSettingFolder + "ShovelSetting.obj";
+                iconPath = s_GemSettingFolder + "ShovelSetting.png";
+                break;
+            case GemSettingType::Channel:
+                iconPath = s_GemSettingFolder + "ChannelSetting.png";
+                break;
         }
 
         std::shared_ptr<polyscope::render::TextureBuffer> icon;
@@ -116,10 +139,14 @@ namespace GemCraft {
         stbi_image_free(data);
 
         Mesh* mesh;
-        if (settingType == GemSettingType::Invisible) {
-            mesh = new Mesh("GemSetting", std::vector<glm::vec3>(), std::vector<std::vector<size_t>>());
-        } else {
-            mesh = new Mesh("GemSetting", meshPath);
+        switch (settingType)
+        {
+            case GemSettingType::Invisible:
+            case GemSettingType::Channel:
+                mesh = new Mesh("GemSetting", std::vector<glm::vec3>(), std::vector<std::vector<size_t>>());
+                break;
+            default:
+                mesh = new Mesh("GemSetting", meshPath);
         }
         m_GemSettingResources[settingType] = new MeshResource(GetName(settingType), icon, mesh);
     }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Mesh/Mesh.h"
-#include "Mesh/GemSettingType.h"
+#include "Mesh/GemSetting.h"
 
 namespace GemCraft {
 
@@ -34,9 +34,11 @@ namespace GemCraft {
 
 		std::shared_ptr<Mesh> CreateGem(const std::string& filepath);
 		std::shared_ptr<Mesh> CreateGemSetting(GemSettingType settingType);
+		std::shared_ptr<Mesh> CreateMandrel();
 
 		void PreloadGems();
 		void PreloadGemSettings();
+		void PreloadMandrel();
 
 		const std::unordered_map<std::string, MeshResource*>& GetGems() const { return m_GemResources; }
 		const std::unordered_map<GemSettingType, MeshResource*>& GetGemSettingResources() const { return m_GemSettingResources; }
@@ -48,6 +50,7 @@ namespace GemCraft {
 	private:
 		std::unordered_map<std::string, MeshResource*> m_GemResources;
 		std::unordered_map<GemSettingType, MeshResource*> m_GemSettingResources;
+		MeshResource* m_Mandrel;
 	private:
 		static ResourceManager* s_Instance;
 	};

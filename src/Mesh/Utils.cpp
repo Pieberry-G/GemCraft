@@ -4,11 +4,10 @@ namespace GemCraft {
 
 	namespace Utils {
 
-		std::shared_ptr<CGALMesh> MeshToCGALMesh(std::shared_ptr<Mesh> mesh)
+		std::shared_ptr<CGALMesh> MeshToCGALMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform)
 		{
 			CGALMesh cgalmesh;
 			std::vector<CGAL::SM_Vertex_index> vertices;
-			glm::mat4 transform = mesh->GetPsTransform();
 			for (const auto& p : mesh->GetVertices()) {
 				glm::vec4 p_tf = transform * glm::vec4(p, 1.0f);
 				vertices.push_back(cgalmesh.add_vertex({ p_tf.x, p_tf.y, p_tf.z }));

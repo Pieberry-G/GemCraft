@@ -22,6 +22,7 @@ namespace GemCraft {
         m_ResourceManager = ResourceManager::Get();
         m_ResourceManager->PreloadGems();
         m_ResourceManager->PreloadGemSettings();
+        m_ResourceManager->PreloadMandrel();
 
         polyscope::state::edgeLengthScale = 0.3;
 

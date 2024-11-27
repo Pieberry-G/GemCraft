@@ -160,18 +160,13 @@ namespace GemCraft {
                 m_PathSpacing = 0.2f;
             }
         }
-        if (ImGui::InputInt("Gem Count Per Path", &m_GemCountPerPath, 1)) {
-            if (m_GemCountPerPath < 2) {
-                m_GemCountPerPath = 2;
+        ImGui::InputFloat("Exposure Depth", &m_ExposureDepth, 0.1f, 0.0f, "%.2f");
+        if (ImGui::InputFloat("Gem Scale", &m_GemScale, 0.1f, 0.0f, "%.2f")) {
+            if (m_GemScale < 0.8f) {
+                m_GemScale = 0.8f;
             }
         }
         ImGui::InputFloat("Gem Rotation (angle)", &m_GemRotation, 45.0f, 0.0f, "%.2f");
-        if (ImGui::InputFloat("Gem Scale", &m_GemScale, 0.2f, 0.0f, "%.2f")) {
-            if (m_GemScale < 0.2f) {
-                m_GemScale = 0.2f;
-            }
-        }
-        ImGui::InputFloat("Gem Depth", &m_GemDepth, 0.1f, 0.0f, "%.2f");
     }
 
 } // namespace GemCraft

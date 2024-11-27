@@ -8,8 +8,8 @@
 #include <CGAL/Polygon_mesh_processing/IO/polygon_mesh_io.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 
-typedef CGAL::Exact_predicates_inexact_constructions_kernel     CGALKernel;
-typedef CGALKernel::Point_3                                     CGALPoint;
+typedef CGAL::Exact_predicates_inexact_constructions_kernel     Kernel;
+typedef Kernel::Point_3                                     CGALPoint;
 typedef CGAL::Surface_mesh<CGALPoint>                           CGALMesh;
 typedef boost::graph_traits<CGALMesh>::halfedge_descriptor      halfedge_descriptor;
 typedef boost::graph_traits<CGALMesh>::edge_descriptor          edge_descriptor;

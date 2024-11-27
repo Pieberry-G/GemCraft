@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Mesh/GemSettingType.h"
+#include "Mesh/GemSetting.h"
 
 #include <filesystem>
 
@@ -40,17 +40,15 @@ namespace GemCraft {
 
 		int GetNumberOfPaths() const { return m_NumberOfPaths; }
 		float GetPathSpacing() const { return m_PathSpacing; }
-		int GetGemCountPerPath() const { return m_GemCountPerPath; }
-		float GetGemRotation() const { return m_GemRotation; }
+		float GetExposureDepth() const { return m_ExposureDepth; }
 		float GetGemScale() const { return m_GemScale; }
-		float GetGemDepth() const { return m_GemDepth; }
+		float GetGemRotation() const { return m_GemRotation; }
 	private:
 		int m_NumberOfPaths = 1;
 		float m_PathSpacing = 1.0f;
-		int m_GemCountPerPath = 2;
+		float m_ExposureDepth = 0.3f;
+		float m_GemScale = 1.3f;
 		float m_GemRotation = 0.0f;
-		float m_GemScale = 1.0f;
-		float m_GemDepth = 0.3f;
 	};
 
 } // namespace GemCraft
