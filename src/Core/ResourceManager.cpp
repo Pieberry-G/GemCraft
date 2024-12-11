@@ -43,7 +43,7 @@ namespace GemCraft {
 
     void ResourceManager::PreloadGems()
     {
-        static const std::string s_GemFolder = "../assets/Gems/";
+        static const std::string s_GemFolder = "../assets/meshes/Gems/";
 
         std::filesystem::path gemFolderPath(s_GemFolder);
         if (!std::filesystem::exists(gemFolderPath) || !std::filesystem::is_directory(gemFolderPath)) {
@@ -88,13 +88,13 @@ namespace GemCraft {
 
     void ResourceManager::PreloadMandrel()
     {
-        Mesh* mesh = new Mesh("Mandrel", "../assets/GemSettings/Mandrel.obj");
+        Mesh* mesh = new Mesh("Mandrel", "../assets/meshes/GemSettings/Mandrel.obj");
         m_Mandrel = new MeshResource("Mandrel", nullptr, mesh);
     }
 
     void ResourceManager::LoadGemSetting(GemSettingType settingType)
     {
-        static const std::string s_GemSettingFolder = "../assets/GemSettings/";
+        static const std::string s_GemSettingFolder = "../assets/meshes/GemSettings/";
         std::string meshPath, iconPath;
         switch (settingType)
         {

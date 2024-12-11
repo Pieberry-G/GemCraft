@@ -7,7 +7,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-### GemCraft
 file(GLOB_RECURSE SRCS "src/*.cpp")
 file(GLOB_RECURSE HEADERS "include/*.h")
 
@@ -20,8 +19,9 @@ target_compile_definitions(GemCraft PRIVATE "$<$<CONFIG:RELEASE>:GC_NDEBUG>")
 
 ### Dependencies
 add_subdirectory(deps)
-target_link_libraries(GemCraft geometry-central polyscope spdlog)
+target_link_libraries(GemCraft geometry-central polyscope spdlog tinygltf tinyobjloader)
 target_include_directories(GemCraft PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(GemCraft PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/deps/polyscope/deps/glad/include")
 target_include_directories(GemCraft PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/deps/polyscope/deps/stb")
 
 ### CGAL
@@ -44,4 +44,4 @@ find_package(CGAL REQUIRED)
 target_link_libraries(GemCraft ${CGAL_LIBRARIES})
 target_include_directories(GemCraft PUBLIC ${CGAL_INCLUDE_DIRS})
 
-
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/config/imgui.ini" DESTINATION "${CMAKE_BINARY_DIR}")

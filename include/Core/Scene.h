@@ -20,14 +20,14 @@ namespace GemCraft {
 		void InitGeodesic();
 
 		void AddRing(const std::string& name, const std::string& filepath);
-		void PlaceGemsOnPath();
 
 		std::shared_ptr<Mesh> GetRing() { return m_Ring; }
 
 	private:
 		//void AdornStrokeWithGems();
-		void BooleanOpDifference();
 		void ConstructGeodesicPath();
+		void PlaceGemsOnPath();
+		void BooleanOpDifference();
 
 		void ShowRingStroke();
 		void ShowRingSelected();

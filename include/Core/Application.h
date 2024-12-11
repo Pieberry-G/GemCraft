@@ -1,10 +1,12 @@
 #pragma once
 
-#include "Core/EventSystem.h"
-#include "polyscope/polyscope.h"
+#include "Core/ResourceManager.h"
+#include "Core/Scene.h"
 
-#include "ResourceManager.h"
-#include "Scene.h"
+#include "EventSystem/ApplicationEvent.h"
+#include "EventSystem/KeyEvent.h"
+
+#include <polyscope/polyscope.h>
 
 namespace GemCraft {
 

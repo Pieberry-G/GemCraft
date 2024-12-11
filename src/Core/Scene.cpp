@@ -62,29 +62,7 @@ namespace GemCraft {
 		m_Ring = std::make_shared<Mesh>(name, filepath);
 		m_Ring->AddToPolyscope();
 		m_Ring->GetPsMesh()->setMaterial("clay");
-		//m_Ring->GetPsMesh()->setSurfaceColor(glm::vec3(0.717, 0.498, 0.866));
 		m_Ring->GetPsMesh()->setSurfaceColor(glm::vec3(0.750, 0.750, 0.750));
-	}
-
-	void Scene::PlaceGemsOnPath()
-	{
-		PlacerTool placerTool(this);
-		for (const Path& path : m_GeodesicPaths) {
-			GemLine gemLine = placerTool.PlaceGemsOnPath(path);
-			m_GemLines.push_back(gemLine);
-		}
-	}
-
-	void Scene::BooleanOpDifference()
-	{
-		glm::mat4 transform = m_Ring->GetPsTransform();
-		m_Ring->RemoveFromPolyscope();
-		BooleanTool booleanTool(this);
-		for (auto& gemLine : m_GemLines) {
-			m_Ring = booleanTool.DifferenceOperation(m_Ring, gemLine);
-		}
-		m_Ring->SetName("Ring");
-		m_Ring->AddToPolyscope(transform);
 	}
 
 	void Scene::ConstructGeodesicPath()
@@ -111,6 +89,27 @@ namespace GemCraft {
 			test->setRadius(0.002f);
 			test->setColor({ 0.0, 0.0, 0.0 });
 		}
+	}
+
+	void Scene::PlaceGemsOnPath()
+	{
+		PlacerTool placerTool(this);
+		for (const Path& path : m_GeodesicPaths) {
+			GemLine gemLine = placerTool.PlaceGemsOnPath(path);
+			m_GemLines.push_back(gemLine);
+		}
+	}
+
+	void Scene::BooleanOpDifference()
+	{
+		glm::mat4 transform = m_Ring->GetPsTransform();
+		m_Ring->RemoveFromPolyscope();
+		BooleanTool booleanTool(this);
+		for (auto& gemLine : m_GemLines) {
+			m_Ring = booleanTool.DifferenceOperation(m_Ring, gemLine);
+		}
+		m_Ring->SetName("Ring");
+		m_Ring->AddToPolyscope(transform);
 	}
 
 	void Scene::ShowRingStroke()

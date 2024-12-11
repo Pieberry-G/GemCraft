@@ -10,3 +10,12 @@
 [submodule "deps/spdlog"]
 	path = deps/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "deps/tinygltf"]
+	path = deps/tinygltf
+	url = https://github.com/syoyo/tinygltf.git
+[submodule "deps/tinyobjloader"]
+	path = deps/tinyobjloader
+	url = https://github.com/tinyobjloader/tinyobjloader.git
+[submodule "deps/sam-adapter/SAM-Adapter-PyTorch"]
+	path = deps/sam-adapter/SAM-Adapter-PyTorch
+	url = https://github.com/tianrun-chen/SAM-Adapter-PyTorch.git

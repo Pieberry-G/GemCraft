@@ -1,11 +1,8 @@
 #include "Core/Application.h"
 #include "Core/EntryPoint.h"
 
-#include "Core/EventSystem.h"
-#include "Core/Input.h"
-
-#include "polyscope/polyscope.h"
-#include "polyscope/surface_mesh.h"
+#include "EventSystem/Event.h"
+#include "Tools/DatasetBuilder.h"
 
 namespace GemCraft {
 
@@ -27,6 +24,11 @@ namespace GemCraft {
         polyscope::state::edgeLengthScale = 0.3;
 
         m_Scene = std::make_shared<Scene>();
+
+        Tools::DatasetBuilder builder;
+        builder.BuildDataset();
+
+        system("..\\deps\\sam-adapter\\Infer.bat");
 	}
 
 	void Application::Run()
@@ -34,7 +36,7 @@ namespace GemCraft {
         //const std::string gemPath = "../assets/Gems/RoundGem1.obj";
         //m_Scene->AddGem("Gem", gemPath, glm::translate(glm::mat4(1.0f), { 0.0f, 0.0f, 0.0f }));
 
-        const std::string ringPath = "../assets/ring/ring0.stl";
+        const std::string ringPath = "../assets/meshes/Dataset/demo001.obj";
         m_Scene->AddRing("Ring", ringPath);
         m_Scene->InitGeodesic();
 
