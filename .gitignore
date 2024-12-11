@@ -1,5 +1,4 @@
 # Build directories
 build/
 
-# Output directories
-output/
+*.pth

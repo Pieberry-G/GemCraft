@@ -25,10 +25,10 @@ namespace GemCraft {
 
         m_Scene = std::make_shared<Scene>();
 
-        Tools::DatasetBuilder builder;
-        builder.BuildDataset();
+        //Tools::DatasetBuilder builder;
+        //builder.BuildDataset();
 
-        system("..\\deps\\sam-adapter\\Infer.bat");
+        //system("..\\deps\\sam-adapter\\Infer.bat");
 	}
 
 	void Application::Run()
@@ -36,7 +36,7 @@ namespace GemCraft {
         //const std::string gemPath = "../assets/Gems/RoundGem1.obj";
         //m_Scene->AddGem("Gem", gemPath, glm::translate(glm::mat4(1.0f), { 0.0f, 0.0f, 0.0f }));
 
-        const std::string ringPath = "../assets/meshes/Dataset/demo001.obj";
+        const std::string ringPath = "../assets/meshes/ring/ring0.stl";
         m_Scene->AddRing("Ring", ringPath);
         m_Scene->InitGeodesic();
 

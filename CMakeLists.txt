@@ -44,4 +44,4 @@ find_package(CGAL REQUIRED)
 target_link_libraries(GemCraft ${CGAL_LIBRARIES})
 target_include_directories(GemCraft PUBLIC ${CGAL_INCLUDE_DIRS})
 
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/config/imgui.ini" DESTINATION "${CMAKE_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/config/.polyscope.ini" DESTINATION "${CMAKE_BINARY_DIR}")
