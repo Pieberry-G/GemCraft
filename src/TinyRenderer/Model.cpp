@@ -2,6 +2,7 @@
 #include "TinyRenderer/Image.h"
 
 #include <polyscope/polyscope.h>
+#include <stb_image.h>
 #include <tiny_obj_loader.h>
 #include <tiny_gltf.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -10,15 +11,11 @@
 namespace GemCraft {
 namespace TinyRenderer {
 
-    static glm::vec3 RED(1.0f, 0.0f, 0.0f);
-    static glm::vec3 GREEN(0.0f, 1.0f, 0.0f);
-    static glm::vec3 BLACK(0.0f, 0.0f, 0.0f);
-    static glm::vec3 WHITE(1.0f, 1.0f, 1.0f);
+    static const glm::vec3 Black(0.0f, 0.0f, 0.0f);
+    static const glm::vec3 White(1.0f, 1.0f, 1.0f);
 
     Model::Model(const std::string& filename)
     {
-        m_WhiteTexture = Image::Create(1, 1, (void*)glm::value_ptr(glm::vec4(1.0f)));
-
         std::string extension = std::filesystem::path(filename).extension().string();
         if (extension == ".obj") {
             LoadOBJFile(filename);
@@ -36,107 +33,15 @@ namespace TinyRenderer {
         ComputeBounds();
     }
 
-    void Model::Draw(Camera& camera, std::shared_ptr<polyscope::render::ShaderProgram> gltfShaderProgram)
-    {
-        for (auto& mesh : m_Meshes) {
-            // Store data in buffers
-            std::vector<glm::vec3> positions;
-            std::vector<glm::vec3> normals;
-            std::vector<glm::vec2> texCoords;
-            for (auto& vert : mesh.m_Vertices) {
-                positions.push_back(vert.Position);
-                normals.push_back(vert.Normal);
-                texCoords.push_back(vert.TexCoord);
-            }
-            gltfShaderProgram->setAttribute("a_Position", positions);
-            gltfShaderProgram->setAttribute("a_Normal", normals);
-            gltfShaderProgram->setAttribute("a_TexCoord", texCoords);
-
-            // Set indices
-            gltfShaderProgram->setIndex(mesh.m_Indices);
-
-            // Set uniforms
-            glm::vec3 lightDir = camera.GetForwardDirection();
-            gltfShaderProgram->setUniform("u_LightDir", glm::value_ptr(lightDir));
-
-            glm::mat4 modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1, 0, 0));
-            modelMatrix = glm::translate(modelMatrix, -(m_MaxBounds + m_MinBounds) / 2.0f);
-            glm::mat4 viewMatrix = camera.GetViewMatrix();
-            glm::mat4 projectionMatrix = camera.GetProjection();
-            gltfShaderProgram->setUniform("u_Model", glm::value_ptr(modelMatrix));
-            gltfShaderProgram->setUniform("u_View", glm::value_ptr(viewMatrix));
-            gltfShaderProgram->setUniform("u_Projection", glm::value_ptr(projectionMatrix));
-            gltfShaderProgram->setUniform("u_BaseColorFactor", glm::value_ptr(m_Materials[mesh.m_MaterialIndex].BaseColorFactor));
-            gltfShaderProgram->setUniform("u_BaseColorTexture", 0);
-
-            if (mesh.m_MaterialIndex == 0) {
-                gltfShaderProgram->setUniform("u_MaskColor", glm::value_ptr(WHITE));
-            }
-            else if (mesh.m_MaterialIndex == 1) {
-                gltfShaderProgram->setUniform("u_MaskColor", glm::value_ptr(BLACK));
-            }
-
-            // Bind textures
-            int baseColorTextureIndex = m_Materials[mesh.m_MaterialIndex].BaseColorTextureIndex;
-            if (baseColorTextureIndex != -1)
-                m_Images[m_Textures[baseColorTextureIndex].ImageIndex]->Bind(0);
-            else
-                m_WhiteTexture->Bind(0);
-
-            gltfShaderProgram->draw();
-        }
-    }
-
-    void Model::SaveRenderResult(const std::string& outFile, uint32_t location)
-    {
-        std::vector<glm::vec4> data;
-        data = polyscope::render::engine->gltfViewerBuffer[location]->getDataVector4();
-        switch (location)
-        {
-        case 0:
-        {
-            unsigned char* buffer = new unsigned char[1024 * 1024 * 3];
-            for (uint32_t i = 0; i < data.size(); i++) {
-                buffer[i * 3 + 0] = static_cast<unsigned char>(data[i].r * 255.0f); // R
-                buffer[i * 3 + 1] = static_cast<unsigned char>(data[i].g * 255.0f); // G
-                buffer[i * 3 + 2] = static_cast<unsigned char>(data[i].b * 255.0f); // B
-            }
-            polyscope::saveImage(outFile, buffer, 1024, 1024, 3);
-            break;
-        }
-        case 1:
-        {
-            unsigned char* buffer = new unsigned char[1024 * 1024 * 3];
-            for (uint32_t i = 0; i < data.size(); i++) {
-                buffer[i * 3 + 0] = static_cast<unsigned char>(data[i].r * 255.0f); // R
-                buffer[i * 3 + 1] = static_cast<unsigned char>(data[i].g * 255.0f); // G
-                buffer[i * 3 + 2] = static_cast<unsigned char>(data[i].b * 255.0f); // B
-                //buffer[i * 4 + 3] = static_cast<unsigned char>(data[i].a * 255.0f); // A
-            }
-            polyscope::saveImage(outFile, buffer, 1024, 1024, 3);
-            break;
-        }
-        case 2:
-        {
-            unsigned char* buffer = new unsigned char[1024 * 1024];
-            for (uint32_t i = 0; i < data.size(); i++) {
-                buffer[i] = static_cast<unsigned char>(data[i].r * 255.0f); // R
-            }
-            polyscope::saveImage(outFile, buffer, 1024, 1024, 1);
-            break;
-        }
-        }
-    }
-
     void Model::LoadOBJFile(const std::string& filename)
     {
-        std::string basePath = std::filesystem::path(filename).parent_path().string();
+        std::filesystem::path basePath = std::filesystem::path(filename).parent_path();
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
         std::string error, warning;
 
-        bool fileLoaded = tinyobj::LoadObj(&attrib, &shapes, &materials, &warning, &error, filename.c_str(), basePath.c_str(), true);
+        bool fileLoaded = tinyobj::LoadObj(&attrib, &shapes, &materials, &warning, &error, filename.c_str(), basePath.string().c_str(), true);
         if (!warning.empty()) {
             GC_CORE_WARN(warning);
         }
@@ -146,7 +51,48 @@ namespace TinyRenderer {
         if (fileLoaded) {
             m_Materials.resize(materials.size());
             for (uint32_t i = 0; i < materials.size(); i++) {
-                m_Materials[i].BaseColorFactor = { materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2], 1.0f };
+                if (materials[i].diffuse_texname != "") {
+                    unsigned char* data;
+                    int width, height, component;
+                    stbi_set_flip_vertically_on_load(1);
+                    std::string aa = (basePath / std::filesystem::path(materials[i].diffuse_texname)).string();
+                    data = stbi_load(aa.c_str(), &width, &height, &component, 0);
+
+                    // Get the image data from stb_image
+                    unsigned char* buffer = nullptr;
+                    int32_t bufferSize = 0;
+                    bool deleteBuffer = false;
+                    // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in OpenGL
+                    if (component == 3) {
+                        bufferSize = width * height * 4;
+                        buffer = new unsigned char[bufferSize];
+                        unsigned char* rgba = buffer;
+                        unsigned char* rgb = data;
+                        for (uint32_t i = 0; i < width * height; ++i) {
+                            memcpy(rgba, rgb, sizeof(unsigned char) * 3);
+                            *(rgba + 3) = 255;
+                            rgba += 4;
+                            rgb += 3;
+                        }
+                        deleteBuffer = true;
+                    }
+                    else {
+                        buffer = data;
+                        bufferSize = width * height * 4;
+                    }
+                    // Load texture from image buffer
+                    m_Images.push_back(Image::Create(width, height, buffer));
+                    m_Textures.push_back(Texture{ (uint32_t)m_Images.size() - 1 });
+                    m_Materials[i].BaseColorTextureIndex = (uint32_t)m_Images.size() - 1;
+
+                    stbi_image_free(data);
+                    if (deleteBuffer) {
+                        delete[] buffer;
+                    }
+                }
+                else {
+                    m_Materials[i].BaseColorFactor = { materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2], 1.0f };
+                }
             }
 
             for (auto& shape : shapes) {
@@ -169,7 +115,7 @@ namespace TinyRenderer {
                         vert.TexCoord.y = attrib.texcoords[2 * index.texcoord_index + 1];
                     }
                     vertices.push_back(vert);
-                    indices.push_back(static_cast<uint32_t>(vertices.size()) - 1);
+                    indices.push_back(static_cast<size_t>(vertices.size()) - 1);
                 }
                 
                 m_Meshes.push_back(Mesh(vertices, indices, shape.mesh.material_ids[0]));
@@ -247,7 +193,7 @@ namespace TinyRenderer {
             unsigned char* buffer = nullptr;
             int32_t bufferSize = 0;
             bool deleteBuffer = false;
-            // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
+            // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in OpenGL
             if (glTFImage.component == 3) {
                 bufferSize = glTFImage.width * glTFImage.height * 4;
                 buffer = new unsigned char[bufferSize];
@@ -255,6 +201,7 @@ namespace TinyRenderer {
                 unsigned char* rgb = &glTFImage.image[0];
                 for (uint32_t i = 0; i < glTFImage.width * glTFImage.height; ++i) {
                     memcpy(rgba, rgb, sizeof(unsigned char) * 3);
+                    *(rgba + 3) = 255;
                     rgba += 4;
                     rgb += 3;
                 }
@@ -423,7 +370,7 @@ namespace TinyRenderer {
         m_MaxBounds = { -MAX_FLOAT, -MAX_FLOAT, -MAX_FLOAT };
 
         for (auto& mesh : m_Meshes) {
-            for (auto& vertex : mesh.m_Vertices) {
+            for (auto& vertex : mesh.Vertices) {
                 m_MinBounds[0] = std::min(vertex.Position[0], m_MinBounds[0]);
                 m_MinBounds[1] = std::min(vertex.Position[1], m_MinBounds[1]);
                 m_MinBounds[2] = std::min(vertex.Position[2], m_MinBounds[2]);

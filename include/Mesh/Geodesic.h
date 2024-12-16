@@ -52,7 +52,7 @@ namespace GemCraft {
 		std::shared_ptr<Mesh> m_Mesh;
 
 		std::shared_ptr<CGALMesh> m_CGALmesh;
-		std::unique_ptr<GCTsf::ManifoldSurfaceMesh> m_GCTmesh;
+		std::unique_ptr<GCTsf::SurfaceMesh> m_GCTmesh;
 		std::unique_ptr<GCTsf::VertexPositionGeometry> m_GCTgeo;
 
 		std::unique_ptr<Surface_mesh_shortest_path> m_ShortestPaths;

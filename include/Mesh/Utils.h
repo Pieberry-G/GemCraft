@@ -21,7 +21,7 @@ namespace GemCraft {
 	namespace Utils {
 		std::shared_ptr<CGALMesh> MeshToCGALMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform);
 		std::shared_ptr<Mesh> CGALMeshToMesh(std::shared_ptr<CGALMesh> cgalmesh, const glm::mat4& transform);
-		std::tuple<std::unique_ptr<GCTsf::ManifoldSurfaceMesh>, std::unique_ptr<GCTsf::VertexPositionGeometry>>	MeshToGCTMesh(std::shared_ptr<Mesh> mesh);
+		std::tuple<std::unique_ptr<GCTsf::SurfaceMesh>, std::unique_ptr<GCTsf::VertexPositionGeometry>>	MeshToGCTMesh(std::shared_ptr<Mesh> mesh);
 
 	} // namespace Utils
 

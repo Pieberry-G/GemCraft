@@ -1,7 +1,6 @@
 #pragma once
 
 #include "TinyRenderer/Mesh.h"
-#include "TinyRenderer/Camera.h"
 #include "TinyRenderer/Image.h"
 
 #include <polyscope/polyscope.h>
@@ -23,12 +22,11 @@ namespace TinyRenderer {
 
     class Model
     {
+        friend class RenderTool;
     public:
         Model(const std::string& filename);
 
-        void Draw(Camera& camera, std::shared_ptr<polyscope::render::ShaderProgram> gltfShaderProgram);
-        void SaveRenderResult(const std::string& outFile, uint32_t location = 0);
-
+        glm::vec3 GetCenter() { return (m_MaxBounds + m_MinBounds) / 2.0f; }
         float GetRadius() { return glm::distance(m_MaxBounds, m_MinBounds) / 2.0f; }
 
     private:
@@ -45,7 +43,6 @@ namespace TinyRenderer {
         void ComputeBounds();
 
     private:
-        std::shared_ptr<Image> m_WhiteTexture;
         std::vector<std::shared_ptr<Image>> m_Images;
         std::vector<Texture> m_Textures;
         std::vector<Material> m_Materials;

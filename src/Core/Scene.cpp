@@ -72,7 +72,7 @@ namespace GemCraft {
 		Path geodesicPath = m_Geodesic->ConstructGeodesicPath();
 		std::vector<Path> parallelPaths = m_Geodesic->CalculateParallelPaths(geodesicPath, numberOfPaths, pathSpacing);
 
-		for (size_t i = 0; i < m_GeodesicPaths.size(); i++) {
+		for (uint32_t i = 0; i < m_GeodesicPaths.size(); i++) {
 			m_Ring->GetPsMesh()->removeQuantity("GeodesicPath(" + std::to_string(i) + ")");
 		}
 		m_GeodesicPaths.clear();
@@ -80,10 +80,10 @@ namespace GemCraft {
 
 		// Visualization
 		std::vector<std::array<size_t, 2>> edgeInds;
-		for (size_t j = 1; j < geodesicPath.Length(); j++) {
+		for (uint32_t j = 1; j < geodesicPath.Length(); j++) {
 			edgeInds.push_back({ j - 1, j });
 		}
-		for (size_t i = 0; i < m_GeodesicPaths.size(); i++) {
+		for (uint32_t i = 0; i < m_GeodesicPaths.size(); i++) {
 			polyscope::SurfaceGraphQuantity* test = m_Ring->GetPsMesh()->addSurfaceGraphQuantity("GeodesicPath(" + std::to_string(i) + ")", m_GeodesicPaths[i].Points(), edgeInds);
 			test->setEnabled(true);
 			test->setRadius(0.002f);
@@ -117,8 +117,8 @@ namespace GemCraft {
 		float strokelinesRadius = 0.002f;
 
 		std::vector<glm::vec3>& positions = polyscope::state::strokePosition;
-		std::vector<std::array<size_t, 2>> edgeInds;
-		for (size_t i = 1; i < positions.size(); i++) {
+		std::vector<std::array<uint32_t, 2>> edgeInds;
+		for (uint32_t i = 1; i < positions.size(); i++) {
 			edgeInds.push_back({ i - 1, i });
 		}
 		polyscope::SurfaceMesh* ring = m_Ring->GetPsMesh();
@@ -131,17 +131,13 @@ namespace GemCraft {
 	void Scene::ShowRingSelected()
 	{
 		// Show selected faces.
-		std::vector<std::array<double, 3>> faceColors(m_Ring->GetFaces().size());
-		for (size_t i = 0; i < m_Ring->GetFaces().size(); i++) {
-			faceColors[i] = { 0.0f, 0.0f, 1.0f };
+		std::vector<glm::vec3> faceColors(m_Ring->GetFaces().size());
+		for (uint32_t i = 0; i < m_Ring->GetFaces().size(); i++) {
+			faceColors[i] = m_Ring->GetPsMesh()->getSurfaceColor();
 		}
-		for (std::set<size_t>::iterator it = polyscope::state::subset.faces.begin();
-			it != polyscope::state::subset.faces.end(); ++it) {
+		for (std::set<size_t>::iterator it = polyscope::state::subset.m_Faces.begin();
+			it != polyscope::state::subset.m_Faces.end(); ++it) {
 			faceColors[*it] = { 0.5, 0, 0.5 };
-		}
-		for (std::set<size_t>::iterator it = polyscope::state::subset.faces.begin();
-		    it != polyscope::state::subset.faces.end(); ++it) {
-		    faceColors[*it] = { 0.5, 0, 0.5 };
 		}
 		//m_Ring->GetPsMesh()->ensureHaveManifoldConnectivity();
 		//for (std::set<size_t>::iterator it = polyscope::state::subset.halfedges.begin();
@@ -169,7 +165,7 @@ namespace GemCraft {
 	{
 		float vertexRadius = 0.01f;
 		std::vector<glm::vec3> vertPos;
-		std::vector<std::array<size_t, 2>> vertInd;
+		std::vector<std::array<uint32_t, 2>> vertInd;
 		vertPos.push_back(polyscope::state::endPath);
 
 		polyscope::SurfaceGraphQuantity* showVerts = m_Ring->GetPsMesh()->addSurfaceGraphQuantity("target point", vertPos, vertInd);

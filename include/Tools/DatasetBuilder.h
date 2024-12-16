@@ -1,3 +1,5 @@
+#pragma once
+
 namespace GemCraft {
 namespace Tools {
 
@@ -5,9 +7,6 @@ namespace Tools {
 	{
 	public:
 		void BuildDataset();
-
-	private:
-		void RenderGLTF(const std::string& filepath);
 
 	};
 

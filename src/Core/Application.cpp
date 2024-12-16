@@ -4,6 +4,9 @@
 #include "EventSystem/Event.h"
 #include "Tools/DatasetBuilder.h"
 
+#include "TinyRenderer/RenderTool.h"
+#include "TinyRenderer/SegmentTool.h"
+
 namespace GemCraft {
 
 	Application* Application::s_Instance = nullptr;
@@ -15,6 +18,8 @@ namespace GemCraft {
 
         polyscope::init();
         polyscope::render::engine->setEventCallback(GC_BIND_EVENT_FN(Application::OnEvent));
+
+        TinyRenderer::RenderTool::Init();
 
         m_ResourceManager = ResourceManager::Get();
         m_ResourceManager->PreloadGems();
@@ -28,7 +33,33 @@ namespace GemCraft {
         //Tools::DatasetBuilder builder;
         //builder.BuildDataset();
 
-        //system("..\\deps\\sam-adapter\\Infer.bat");
+        GC_CORE_WARN("GemCraft Application Launch!\n");
+
+        //std::filesystem::path filePath = "../assets/meshes/Ring/ring0.stl";
+        ////std::filesystem::path filePath = "../assets/meshes/Gen/gen_001.obj";
+        ////std::filesystem::path filePath = "../assets/meshes/Ring/demo061.obj";
+        //std::filesystem::path renderOutpath = "../dataIO/InputImages";
+        //TinyRenderer::Model model(filePath.string());
+        //TinyRenderer::Camera camera(model.GetRadius() * 2.5f);
+        //const std::vector<std::array<float, 2>> angles = {
+        //    { 0.0f, 0.0f },
+        //    { 0.0f, 90.0f },
+        //    { 0.0f, 180.0f },
+        //    { 0.0f, 270.0f },
+        //    { 90.0f, 0.0f },
+        //    { -90.0f, 0.0f },
+        //};
+
+        //GC_CORE_WARN("Rendering multiview images.");
+        //for (uint32_t i = 0; i < angles.size(); i++) {
+        //    camera.SetEulerAngles(angles[i][0], angles[i][1]);
+        //    TinyRenderer::RenderTool::Render(model, camera);
+        //    TinyRenderer::RenderTool::SaveRenderResult((renderOutpath / filePath.stem()).string() + "_" + std::to_string(i) + ".jpg", 0);
+        //}
+        //GC_CORE_INFO("Rendering completed!\n");
+        //TinyRenderer::RenderTool::Render(model, camera);
+        ////SegmentTool::Segment();
+        //TinyRenderer::RenderTool::BackProjection(model);
 	}
 
 	void Application::Run()
@@ -36,9 +67,14 @@ namespace GemCraft {
         //const std::string gemPath = "../assets/Gems/RoundGem1.obj";
         //m_Scene->AddGem("Gem", gemPath, glm::translate(glm::mat4(1.0f), { 0.0f, 0.0f, 0.0f }));
 
-        const std::string ringPath = "../assets/meshes/ring/ring0.stl";
+        const std::string ringPath = "../assets/meshes/Ring/ring0.stl";
+        //const std::string ringPath = "../assets/meshes/Gen/gen_001.obj";
+        //const std::string ringPath = "../assets/meshes/Ring/demo061.obj";
         m_Scene->AddRing("Ring", ringPath);
         m_Scene->InitGeodesic();
+        GC_CORE_TRACE("Loading model file: {0}\n", ringPath);
+
+        //m_Scene->ShowRingSelected();
 
         // Get indices for element picking
         std::shared_ptr<Mesh> ring = m_Scene->GetRing();

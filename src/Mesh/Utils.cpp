@@ -42,10 +42,10 @@ namespace GemCraft {
 			return std::make_shared<Mesh>("", vertices, faces);
 		}
 
-		std::tuple<std::unique_ptr<GCTsf::ManifoldSurfaceMesh>, std::unique_ptr<GCTsf::VertexPositionGeometry>>
+		std::tuple<std::unique_ptr<GCTsf::SurfaceMesh>, std::unique_ptr<GCTsf::VertexPositionGeometry>>
 			MeshToGCTMesh(std::shared_ptr<Mesh> mesh)
 		{
-			std::vector<std::vector<std::size_t>> faces;
+			std::vector<std::vector<size_t>> faces;
 			std::vector<GCT::Vector3> vertices;
 			glm::mat4 transform = mesh->GetPsTransform();
 			for (const auto& p : mesh->GetVertices()) {
@@ -53,7 +53,7 @@ namespace GemCraft {
 				vertices.push_back({ p_tf.x, p_tf.y, p_tf.z });
 			}
 			faces = mesh->GetFaces();
-			return GCTsf::makeManifoldSurfaceMeshAndGeometry(faces, vertices);
+			return GCTsf::makeSurfaceMeshAndGeometry(faces, vertices);
 		}
 
 	} // namespace Utils

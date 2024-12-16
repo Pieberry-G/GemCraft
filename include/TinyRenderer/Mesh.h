@@ -13,15 +13,18 @@ namespace TinyRenderer {
         glm::vec2 TexCoord;
     };
 
-    class Mesh
+    struct Mesh
     {
-    public:
-        Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, int materialIndex);
+        std::vector<Vertex> Vertices;
+        std::vector<uint32_t> Indices;
+        int MaterialIndex;
 
-    public:
-        std::vector<Vertex> m_Vertices;
-        std::vector<uint32_t> m_Indices;
-        int m_MaterialIndex;
+        Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, int materialIndex)
+        {
+            Vertices = vertices;
+            Indices = indices;
+            MaterialIndex = materialIndex;
+        }
     };
 
 } // namespace TinyRenderer

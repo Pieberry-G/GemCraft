@@ -23,6 +23,7 @@ namespace GemCraft {
 
 		std::shared_ptr<Mesh> GetRing() { return m_Ring; }
 
+		void ShowRingSelected();
 	private:
 		//void AdornStrokeWithGems();
 		void ConstructGeodesicPath();
@@ -30,7 +31,6 @@ namespace GemCraft {
 		void BooleanOpDifference();
 
 		void ShowRingStroke();
-		void ShowRingSelected();
 		void ShowSourcePoint();
 		void ShowTargetPoint();
 

@@ -1,7 +1,7 @@
 #include "Mesh/Mesh.h"
 
-#include "polyscope/polyscope.h"
-#include "polyscope/surface_mesh.h"
+#include <polyscope/polyscope.h>
+#include <polyscope/surface_mesh.h>
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
@@ -17,13 +17,35 @@ typedef boost::graph_traits<CGALMesh>::face_descriptor          face_descriptor;
 
 namespace CGALpmp = CGAL::Polygon_mesh_processing;
 
+#include "geometrycentral/surface/surface_mesh.h"
+#include "geometrycentral/surface/meshio.h"
+#include "geometrycentral/surface/vertex_position_geometry.h"
+namespace GCT = geometrycentral;
+namespace GCTsf = geometrycentral::surface;
+
 namespace GemCraft {
 
-    Mesh::Mesh(const std::string& name, const std::string& path, bool isRing)
+    Mesh::Mesh(const std::string& name, const std::string& filepath, bool isRing)
         : m_Name(name)
     {
+        //std::unique_ptr<GCTsf::SurfaceMesh> mesh;
+        //std::unique_ptr<GCTsf::VertexPositionGeometry> geometry;
+        //std::tie(mesh, geometry) = GCTsf::readSurfaceMesh(filepath);
+        //
+        //for (GCTsf::Vertex v : mesh->vertices()) {
+        //    m_Vertices.push_back({ geometry->inputVertexPositions[v].x, geometry->inputVertexPositions[v].y, geometry->inputVertexPositions[v].z });
+        //}
+        //for (GCTsf::Face f : mesh->faces()) {
+        //    std::vector<size_t> face;
+        //    for (GCTsf::Vertex v : f.adjacentVertices()) {
+        //        face.push_back(v.getIndex());
+        //    }
+        //    m_Faces.push_back(face);
+        //}
+
+
         CGALMesh mesh;
-        if (!CGALpmp::IO::read_polygon_mesh(path, mesh)) {
+        if (!CGALpmp::IO::read_polygon_mesh(filepath, mesh)) {
             GC_CORE_ASSERT(false, "Can not load mesh!");
         }
 
