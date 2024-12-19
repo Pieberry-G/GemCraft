@@ -22,10 +22,9 @@ namespace TinyRenderer {
 	public:
 		static void Init();
 		static void Render(Model& model, Camera& camera);
-		static void RenderFaceID(Mesh& mesh, Camera& camera);
 
 		static void SaveRenderResult(const std::string& outFile, uint32_t location = 0);
-		static void BackProjection(Model& model);
+		static void BackProjection(const std::string& maskFile);
 
 	private:
 		static void DrawModel(Model& model, Camera& camera, std::shared_ptr<polyscope::render::ShaderProgram> gltfShaderProgram);

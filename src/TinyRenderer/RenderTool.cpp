@@ -38,23 +38,39 @@ namespace TinyRenderer {
 		s_Data->TinyRendererFb->clear();
 		s_Data->TinyRendererFb->clear(0, White);
 		s_Data->TinyRendererFb->clear(1, Black);
-		s_Data->TinyRendererFb->clear(2, Black);
+        s_Data->TinyRendererFb->clear(2, { -1.0f, -1.0f, -1.0f });
 
 		DrawModel(model, camera, s_Data->ShaderProgram);
 
 		polyscope::render::engine->setBackfaceCull(); // return to default setting
 	}
 
-    void RenderTool::BackProjection(Model& model)
+    void RenderTool::BackProjection(const std::string& maskFile)
     {
-        auto& meshes = model.m_Meshes;
-        size_t faceIDStart = polyscope::state::facePickIndStart;
-        for (auto& mesh : meshes) {
-            for (uint32_t i = 0; i < mesh.Vertices.size(); i++) {
-                polyscope::state::subset.AddFace(faceIDStart + (size_t)i / 3);
+        std::shared_ptr<Image> image = Image::Create(maskFile);
+        std::vector<std::array<float, 4>> outData = image->ReadBuffer();
+
+        std::vector<glm::vec4> faceIDs;
+        faceIDs = polyscope::render::engine->tinyRendererBuffer[2]->getDataVector4();
+
+        //size_t faceIDStart = polyscope::state::facePickIndStart;
+        for (size_t i = 0; i < 1024; i++) {
+            for (size_t j = 0; j < 1024; j++) {
+                if (faceIDs[i * 1024 + j].x != -1.0f && outData[i * 1024 + j][0] == 1.0f) {
+                    size_t faceID = size_t(faceIDs[i * 1024 + j].x);
+                    polyscope::state::subset.AddFace(faceID);
+                }
             }
-            faceIDStart += mesh.Vertices.size() / 3;
         }
+
+        //auto& meshes = model.m_Meshes;
+        //size_t faceIDStart = polyscope::state::facePickIndStart;
+        //for (auto& mesh : meshes) {
+        //    for (size_t i = 0; i < mesh.Vertices.size(); i++) {
+        //        polyscope::state::subset.AddFace(faceIDStart + (size_t)i / 3);
+        //    }
+        //    faceIDStart += mesh.Vertices.size() / 3;
+        //}
     }
 
     void RenderTool::SaveRenderResult(const std::string& outFile, uint32_t location)
@@ -66,7 +82,7 @@ namespace TinyRenderer {
         case 0: // Render
         {
             unsigned char* buffer = new unsigned char[1024 * 1024 * 3];
-            for (uint32_t i = 0; i < data.size(); i++) {
+            for (size_t i = 0; i < data.size(); i++) {
                 buffer[i * 3 + 0] = static_cast<unsigned char>(data[i].r * 255.0f); // R
                 buffer[i * 3 + 1] = static_cast<unsigned char>(data[i].g * 255.0f); // G
                 buffer[i * 3 + 2] = static_cast<unsigned char>(data[i].b * 255.0f); // B
@@ -77,7 +93,7 @@ namespace TinyRenderer {
         case 1: // Mask
         {
             unsigned char* buffer = new unsigned char[1024 * 1024];
-            for (uint32_t i = 0; i < data.size(); i++) {
+            for (size_t i = 0; i < data.size(); i++) {
                 buffer[i] = static_cast<unsigned char>(data[i].r * 255.0f); // R
             }
             polyscope::saveImage(outFile, buffer, 1024, 1024, 1);
@@ -99,13 +115,15 @@ namespace TinyRenderer {
             std::vector<glm::vec3> positions;
             std::vector<glm::vec3> normals;
             std::vector<glm::vec2> texCoords;
-            std::vector<int> faceID;
-            for (uint32_t i = 0; i < mesh.Vertices.size(); i++) {
+            std::vector<double> faceID;
+
+            GC_CORE_ASSERT(mesh.Vertices.size() == mesh.Indices.size());
+            for (size_t i = 0; i < mesh.Vertices.size(); i++) {
                 auto& vert = mesh.Vertices[i];
                 positions.push_back(vert.Position);
                 normals.push_back(vert.Normal);
                 texCoords.push_back(vert.TexCoord);
-                faceID.push_back(faceIDStart + i / 3);
+                faceID.push_back(double(i / 3));
             }
             faceIDStart += mesh.Vertices.size() / 3;
 

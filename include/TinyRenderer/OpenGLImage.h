@@ -20,6 +20,8 @@ namespace GemCraft {
 
 		virtual void Bind(uint32_t slot = 0) const override;
 
+		virtual std::vector<std::array<float, 4>> ReadBuffer() const override;
+
 		virtual bool IsLoaded() const override { return m_IsLoaded; }
 
 		virtual bool operator==(const Image& other) const override

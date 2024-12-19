@@ -2,6 +2,7 @@
 #include "Core/ResourceManager.h"
 
 #include "Mesh/Geodesic.h"
+#include "Mesh/PreprocessTool.h"
 #include "Mesh/PlacerTool.h"
 #include "Mesh/BooleanTool.h"
 
@@ -65,6 +66,12 @@ namespace GemCraft {
 		m_Ring->GetPsMesh()->setSurfaceColor(glm::vec3(0.750, 0.750, 0.750));
 	}
 
+	void Scene::PreprocessRing()
+	{
+		PreprocessTool preprocessTool(this);
+		preprocessTool.PreprocessRing();
+	}
+
 	void Scene::ConstructGeodesicPath()
 	{
 		int numberOfPaths = m_GemPatternUI.GetNumberOfPaths();
@@ -72,7 +79,7 @@ namespace GemCraft {
 		Path geodesicPath = m_Geodesic->ConstructGeodesicPath();
 		std::vector<Path> parallelPaths = m_Geodesic->CalculateParallelPaths(geodesicPath, numberOfPaths, pathSpacing);
 
-		for (uint32_t i = 0; i < m_GeodesicPaths.size(); i++) {
+		for (size_t i = 0; i < m_GeodesicPaths.size(); i++) {
 			m_Ring->GetPsMesh()->removeQuantity("GeodesicPath(" + std::to_string(i) + ")");
 		}
 		m_GeodesicPaths.clear();
@@ -80,10 +87,10 @@ namespace GemCraft {
 
 		// Visualization
 		std::vector<std::array<size_t, 2>> edgeInds;
-		for (uint32_t j = 1; j < geodesicPath.Length(); j++) {
+		for (size_t j = 1; j < geodesicPath.Length(); j++) {
 			edgeInds.push_back({ j - 1, j });
 		}
-		for (uint32_t i = 0; i < m_GeodesicPaths.size(); i++) {
+		for (size_t i = 0; i < m_GeodesicPaths.size(); i++) {
 			polyscope::SurfaceGraphQuantity* test = m_Ring->GetPsMesh()->addSurfaceGraphQuantity("GeodesicPath(" + std::to_string(i) + ")", m_GeodesicPaths[i].Points(), edgeInds);
 			test->setEnabled(true);
 			test->setRadius(0.002f);
@@ -117,8 +124,8 @@ namespace GemCraft {
 		float strokelinesRadius = 0.002f;
 
 		std::vector<glm::vec3>& positions = polyscope::state::strokePosition;
-		std::vector<std::array<uint32_t, 2>> edgeInds;
-		for (uint32_t i = 1; i < positions.size(); i++) {
+		std::vector<std::array<size_t, 2>> edgeInds;
+		for (size_t i = 1; i < positions.size(); i++) {
 			edgeInds.push_back({ i - 1, i });
 		}
 		polyscope::SurfaceMesh* ring = m_Ring->GetPsMesh();
@@ -132,7 +139,7 @@ namespace GemCraft {
 	{
 		// Show selected faces.
 		std::vector<glm::vec3> faceColors(m_Ring->GetFaces().size());
-		for (uint32_t i = 0; i < m_Ring->GetFaces().size(); i++) {
+		for (size_t i = 0; i < m_Ring->GetFaces().size(); i++) {
 			faceColors[i] = m_Ring->GetPsMesh()->getSurfaceColor();
 		}
 		for (std::set<size_t>::iterator it = polyscope::state::subset.m_Faces.begin();

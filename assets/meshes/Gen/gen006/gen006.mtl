@@ -1,0 +1,13 @@
+# Blender 4.2.3 LTS MTL File: 'gen006.blend'
+# www.blender.org
+
+newmtl tripo_material_99e3c856-eb29-4edf-9b57-bdf77ed2ed28
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Color_99e3c856-eb29-4edf-9b57-bdf77ed2ed28.jpg
+map_Bump -bm 1.000000 NormalGL_99e3c856-eb29-4edf-9b57-bdf77ed2ed28.jpg

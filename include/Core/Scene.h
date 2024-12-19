@@ -10,6 +10,7 @@ namespace GemCraft {
 
 	class Scene
 	{
+		friend class PreprocessTool;
 		friend class PlacerTool;
 		friend class BooleanTool;
 	public:
@@ -23,7 +24,7 @@ namespace GemCraft {
 
 		std::shared_ptr<Mesh> GetRing() { return m_Ring; }
 
-		void ShowRingSelected();
+		void PreprocessRing();
 	private:
 		//void AdornStrokeWithGems();
 		void ConstructGeodesicPath();
@@ -31,6 +32,7 @@ namespace GemCraft {
 		void BooleanOpDifference();
 
 		void ShowRingStroke();
+		void ShowRingSelected();
 		void ShowSourcePoint();
 		void ShowTargetPoint();
 

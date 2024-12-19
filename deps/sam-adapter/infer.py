@@ -37,7 +37,7 @@ if __name__ == '__main__':
     with torch.no_grad():
         model.eval()
 
-        number = 1
+        number = 0
         for batch in loader:
             for k, v in batch.items():
                 batch[k] = v.cuda()

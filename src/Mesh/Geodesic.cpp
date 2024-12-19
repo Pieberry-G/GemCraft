@@ -1,13 +1,13 @@
 #include "Mesh/Geodesic.h"
-#include "Mesh/Utils.h"
+#include "Mesh/FormatTool.h"
 
 namespace GemCraft {
 
 	Geodesic::Geodesic(std::shared_ptr<Mesh>& mesh)
 	{
 		m_Mesh = mesh;
-		m_CGALmesh = Utils::MeshToCGALMesh(m_Mesh, m_Mesh->GetPsTransform());
-		std::tie(m_GCTmesh, m_GCTgeo) = Utils::MeshToGCTMesh(m_Mesh);
+		m_CGALmesh = FormatTool::MeshToCGALMesh(m_Mesh, m_Mesh->GetPsTransform());
+		std::tie(m_GCTmesh, m_GCTgeo) = FormatTool::MeshToGCTMesh(m_Mesh);
 
 		// Construct a shortest path query object and add a source point
 		m_ShortestPaths = std::make_unique<Surface_mesh_shortest_path>(*m_CGALmesh);

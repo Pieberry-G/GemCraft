@@ -25,6 +25,7 @@ namespace TinyRenderer {
         friend class RenderTool;
     public:
         Model(const std::string& filename);
+        Model(const std::vector<glm::vec3>& verts, const std::vector<std::vector<size_t>>& faces);
 
         glm::vec3 GetCenter() { return (m_MaxBounds + m_MinBounds) / 2.0f; }
         float GetRadius() { return glm::distance(m_MaxBounds, m_MinBounds) / 2.0f; }

@@ -46,7 +46,7 @@ namespace GemCraft {
 		std::shared_ptr<Mesh> PlaceGemSetting(const std::string& name, GemSettingType settingType, const glm::mat4& transform = glm::mat4(1.0f));
 		std::shared_ptr<Mesh> PlaceGemSetting(GemSettingSpecification spec);
 	
-	public:
+	private:
 		Scene* m_Scene;
 	};
 

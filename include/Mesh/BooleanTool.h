@@ -82,7 +82,7 @@ namespace GemCraft {
 		std::shared_ptr<CGALMesh> ConstructContexHull(std::shared_ptr<CGALMesh> mesh);
 		std::vector<CGALPoint> CalculateGroove(const Path& path, float distanceUP, float topWidth, float distanceDown, float bottomWidth);
 
-	public:
+	private:
 		Scene* m_Scene;
 	};
 

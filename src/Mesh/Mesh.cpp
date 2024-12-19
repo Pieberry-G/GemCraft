@@ -26,8 +26,10 @@ namespace GCTsf = geometrycentral::surface;
 namespace GemCraft {
 
     Mesh::Mesh(const std::string& name, const std::string& filepath, bool isRing)
-        : m_Name(name)
+        : m_Name(name), m_Filepath(filepath)
     {
+        GC_CORE_TRACE("Loading model file: {0}", filepath);
+
         //std::unique_ptr<GCTsf::SurfaceMesh> mesh;
         //std::unique_ptr<GCTsf::VertexPositionGeometry> geometry;
         //std::tie(mesh, geometry) = GCTsf::readSurfaceMesh(filepath);

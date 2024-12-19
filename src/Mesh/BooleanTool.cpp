@@ -1,6 +1,6 @@
 #include "Mesh/BooleanTool.h"
 
-#include "Mesh/Utils.h"
+#include "Mesh/FormatTool.h"
 #include "Core/Scene.h"
 #include "Core/ResourceManager.h"
 
@@ -18,7 +18,7 @@ namespace GemCraft {
 		glm::mat4 transform = ring->GetPsTransform();
 		glm::mat4 inverseTransform = glm::inverse(transform);
 
-		std::shared_ptr<CGALMesh> mesh1 = Utils::MeshToCGALMesh(ring, ring->GetPsTransform());
+		std::shared_ptr<CGALMesh> mesh1 = FormatTool::MeshToCGALMesh(ring, ring->GetPsTransform());
 		Exact_point_map mesh1_exact_points = mesh1->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
 		Exact_vertex_point_map mesh1_vpm(mesh1_exact_points, *mesh1);
 
@@ -28,7 +28,7 @@ namespace GemCraft {
 
 		// Gems
 		for (size_t i = 0; i < gems.size(); i++) {
-			std::shared_ptr<CGALMesh> mesh3 = Utils::MeshToCGALMesh(gems[i], gems[i]->GetPsTransform());
+			std::shared_ptr<CGALMesh> mesh3 = FormatTool::MeshToCGALMesh(gems[i], gems[i]->GetPsTransform());
 
 			Exact_point_map mesh3_exact_points = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
 			Exact_vertex_point_map mesh3_vpm(mesh3_exact_points, *mesh3);
@@ -42,7 +42,7 @@ namespace GemCraft {
 		// Mandrels
 		for (size_t i = 0; i < gems.size(); i++) {
 			std::shared_ptr<Mesh> mandrel = ResourceManager::Get()->CreateMandrel();
-			std::shared_ptr<CGALMesh> mesh3 = Utils::MeshToCGALMesh(mandrel, gems[i]->GetPsTransform());
+			std::shared_ptr<CGALMesh> mesh3 = FormatTool::MeshToCGALMesh(mandrel, gems[i]->GetPsTransform());
 
 			Exact_point_map mesh3_exact_points = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
 			Exact_vertex_point_map mesh3_vpm(mesh3_exact_points, *mesh3);
@@ -55,7 +55,7 @@ namespace GemCraft {
 
 		// GemSettings
 		for (size_t i = 0; i < gemSettings.size(); i++) {
-			std::shared_ptr<CGALMesh> mesh3 = Utils::MeshToCGALMesh(gemSettings[i], gemSettings[i]->GetPsTransform());
+			std::shared_ptr<CGALMesh> mesh3 = FormatTool::MeshToCGALMesh(gemSettings[i], gemSettings[i]->GetPsTransform());
 			mesh3 = ConstructContexHull(mesh3);
 
 			Exact_point_map mesh3_exact_points = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
@@ -157,7 +157,7 @@ namespace GemCraft {
 			GC_CORE_INFO("Difference was successfully computed.");
 		}
 
-		return Utils::CGALMeshToMesh(mesh1, inverseTransform);
+		return FormatTool::CGALMeshToMesh(mesh1, inverseTransform);
 	}
 
 	std::shared_ptr<CGALMesh> BooleanTool::ConstructContexHull(std::shared_ptr<CGALMesh> mesh)

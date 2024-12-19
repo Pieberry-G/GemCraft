@@ -25,11 +25,13 @@ namespace GemCraft {
 		std::shared_ptr<Scene> GetScene() { return m_Scene; }
 
 		static Application* Get() { return s_Instance; }
+
 	private:
 		bool m_Running = true;
 
 		ResourceManager* m_ResourceManager;
 		std::shared_ptr<Scene> m_Scene;
+
 	private:
 		static Application* s_Instance;
 	};

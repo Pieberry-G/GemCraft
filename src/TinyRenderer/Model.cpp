@@ -33,6 +33,23 @@ namespace TinyRenderer {
         ComputeBounds();
     }
 
+    Model::Model(const std::vector<glm::vec3>& verts, const std::vector<std::vector<size_t>>& faces)
+    {
+        m_Materials.push_back({ glm::vec4(0.750, 0.750, 0.750, 1.0f), -1 });
+
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+        for (auto& face : faces) {
+            for (auto& index : face) {
+                vertices.push_back({ verts[index], glm::vec3(0.0f, 0.0f, 0.0f), glm::vec2(0.0f)});
+                indices.push_back(indices.size());
+            }
+        }
+        m_Meshes.push_back({ vertices, indices, 0 });
+
+        ComputeBounds();
+    }
+
     void Model::LoadOBJFile(const std::string& filename)
     {
         std::filesystem::path basePath = std::filesystem::path(filename).parent_path();
@@ -50,44 +67,46 @@ namespace TinyRenderer {
         }
         if (fileLoaded) {
             m_Materials.resize(materials.size());
-            for (uint32_t i = 0; i < materials.size(); i++) {
+            for (size_t i = 0; i < materials.size(); i++) {
                 if (materials[i].diffuse_texname != "") {
                     unsigned char* data;
                     int width, height, component;
                     stbi_set_flip_vertically_on_load(1);
-                    std::string aa = (basePath / std::filesystem::path(materials[i].diffuse_texname)).string();
-                    data = stbi_load(aa.c_str(), &width, &height, &component, 0);
+                    std::string texpath = (basePath / std::filesystem::path(materials[i].diffuse_texname)).string();
+                    data = stbi_load(texpath.c_str(), &width, &height, &component, 0);
 
-                    // Get the image data from stb_image
-                    unsigned char* buffer = nullptr;
-                    int32_t bufferSize = 0;
-                    bool deleteBuffer = false;
-                    // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in OpenGL
-                    if (component == 3) {
-                        bufferSize = width * height * 4;
-                        buffer = new unsigned char[bufferSize];
-                        unsigned char* rgba = buffer;
-                        unsigned char* rgb = data;
-                        for (uint32_t i = 0; i < width * height; ++i) {
-                            memcpy(rgba, rgb, sizeof(unsigned char) * 3);
-                            *(rgba + 3) = 255;
-                            rgba += 4;
-                            rgb += 3;
+                    if (data) {
+                        // Get the image data from stb_image
+                        unsigned char* buffer = nullptr;
+                        int32_t bufferSize = 0;
+                        bool deleteBuffer = false;
+                        // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in OpenGL
+                        if (component == 3) {
+                            bufferSize = width * height * 4;
+                            buffer = new unsigned char[bufferSize];
+                            unsigned char* rgba = buffer;
+                            unsigned char* rgb = data;
+                            for (size_t i = 0; i < width * height; ++i) {
+                                memcpy(rgba, rgb, sizeof(unsigned char) * 3);
+                                *(rgba + 3) = 255;
+                                rgba += 4;
+                                rgb += 3;
+                            }
+                            deleteBuffer = true;
                         }
-                        deleteBuffer = true;
-                    }
-                    else {
-                        buffer = data;
-                        bufferSize = width * height * 4;
-                    }
-                    // Load texture from image buffer
-                    m_Images.push_back(Image::Create(width, height, buffer));
-                    m_Textures.push_back(Texture{ (uint32_t)m_Images.size() - 1 });
-                    m_Materials[i].BaseColorTextureIndex = (uint32_t)m_Images.size() - 1;
+                        else {
+                            buffer = data;
+                            bufferSize = width * height * 4;
+                        }
+                        // Load texture from image buffer
+                        m_Images.push_back(Image::Create(width, height, buffer));
+                        m_Textures.push_back(Texture{ (uint32_t)m_Images.size() - 1 });
+                        m_Materials[i].BaseColorTextureIndex = (uint32_t)m_Images.size() - 1;
 
-                    stbi_image_free(data);
-                    if (deleteBuffer) {
-                        delete[] buffer;
+                        stbi_image_free(data);
+                        if (deleteBuffer) {
+                            delete[] buffer;
+                        }
                     }
                 }
                 else {
@@ -144,7 +163,7 @@ namespace TinyRenderer {
             LoadGLTFMaterials(glTFInput);
             LoadGLTFTextures(glTFInput);
             const tinygltf::Scene& scene = glTFInput.scenes[0];
-            for (uint32_t i = 0; i < scene.nodes.size(); i++) {
+            for (size_t i = 0; i < scene.nodes.size(); i++) {
                 const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
                 LoadGLTFNode(node, glTFInput);
             }
@@ -172,7 +191,7 @@ namespace TinyRenderer {
             LoadGLTFMaterials(glTFInput);
             LoadGLTFTextures(glTFInput);
             const tinygltf::Scene& scene = glTFInput.scenes[0];
-            for (uint32_t i = 0; i < scene.nodes.size(); i++) {
+            for (size_t i = 0; i < scene.nodes.size(); i++) {
                 const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
                 LoadGLTFNode(node, glTFInput);
             }
@@ -187,7 +206,7 @@ namespace TinyRenderer {
         // Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
         // loading them from disk, we fetch them from the glTF loader and upload the buffers
         m_Images.resize(input.images.size());
-        for (uint32_t i = 0; i < input.images.size(); i++) {
+        for (size_t i = 0; i < input.images.size(); i++) {
             tinygltf::Image& glTFImage = input.images[i];
             // Get the image data from the glTF loader
             unsigned char* buffer = nullptr;
@@ -199,7 +218,7 @@ namespace TinyRenderer {
                 buffer = new unsigned char[bufferSize];
                 unsigned char* rgba = buffer;
                 unsigned char* rgb = &glTFImage.image[0];
-                for (uint32_t i = 0; i < glTFImage.width * glTFImage.height; ++i) {
+                for (size_t i = 0; i < glTFImage.width * glTFImage.height; ++i) {
                     memcpy(rgba, rgb, sizeof(unsigned char) * 3);
                     *(rgba + 3) = 255;
                     rgba += 4;
@@ -222,7 +241,7 @@ namespace TinyRenderer {
     void Model::LoadGLTFTextures(tinygltf::Model& input)
     {
         m_Textures.resize(input.textures.size());
-        for (uint32_t i = 0; i < input.textures.size(); i++) {
+        for (size_t i = 0; i < input.textures.size(); i++) {
             m_Textures[i].ImageIndex = input.textures[i].source;
         }
     }
@@ -230,7 +249,7 @@ namespace TinyRenderer {
     void Model::LoadGLTFMaterials(tinygltf::Model& input)
     {
         m_Materials.resize(input.materials.size());
-        for (uint32_t i = 0; i < input.materials.size(); i++) {
+        for (size_t i = 0; i < input.materials.size(); i++) {
             // We only read the most basic properties required for our sample
             tinygltf::Material glTFMaterial = input.materials[i];
             // Get the base color factor
@@ -268,7 +287,7 @@ namespace TinyRenderer {
 
         // Load node's children
         if (inputNode.children.size() > 0) {
-            for (uint32_t i = 0; i < inputNode.children.size(); i++) {
+            for (size_t i = 0; i < inputNode.children.size(); i++) {
                 LoadGLTFNode(input.nodes[inputNode.children[i]], input);
             }
         }
@@ -278,7 +297,7 @@ namespace TinyRenderer {
         if (inputNode.mesh > -1) {
             const tinygltf::Mesh mesh = input.meshes[inputNode.mesh];
             // Iterate through all primitives of this node's mesh
-            for (uint32_t i = 0; i < mesh.primitives.size(); i++) {
+            for (size_t i = 0; i < mesh.primitives.size(); i++) {
 
                 std::vector<Vertex> vertices;
                 std::vector<uint32_t> indices;

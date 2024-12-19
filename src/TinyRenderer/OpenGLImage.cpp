@@ -35,4 +35,14 @@ namespace GemCraft {
 		glActiveTexture(GL_TEXTURE0);
 	}
 
+	std::vector<std::array<float, 4>> OpenGLImage::ReadBuffer() const
+	{
+		size_t buffSize = m_Width * m_Height * 4;
+		std::vector<std::array<float, 4>> outData;
+		outData.resize(buffSize);
+		Bind();
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, static_cast<void*>(&outData.front()));
+		return outData;
+	}
+
 } // namespace GemCraft
