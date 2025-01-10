@@ -3,7 +3,7 @@
 namespace GemCraft {
 namespace FormatTool {
 
-	std::shared_ptr<CGALMesh> MeshToCGALMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform)
+	std::shared_ptr<CGALMesh> MeshToCGALMesh(const std::shared_ptr<Mesh>& mesh, const glm::mat4& transform)
 	{
 		CGALMesh cgalmesh;
 		std::vector<CGAL::SM_Vertex_index> vertices;
@@ -21,7 +21,7 @@ namespace FormatTool {
 		return std::make_shared<CGALMesh>(cgalmesh);
 	}
 
-	std::shared_ptr<Mesh> CGALMeshToMesh(std::shared_ptr<CGALMesh> cgalmesh, const glm::mat4& transform)
+	std::shared_ptr<Mesh> CGALMeshToMesh(const std::shared_ptr<CGALMesh>& cgalmesh, const glm::mat4& transform)
 	{
 		std::vector<glm::vec3> vertices;
 		std::vector<std::vector<size_t>> faces;
@@ -42,7 +42,7 @@ namespace FormatTool {
 	}
 
 	std::tuple<std::unique_ptr<GCTsf::ManifoldSurfaceMesh>, std::unique_ptr<GCTsf::VertexPositionGeometry>>
-		MeshToGCTMesh(std::shared_ptr<Mesh> mesh)
+		MeshToGCTMesh(const std::shared_ptr<Mesh>& mesh)
 	{
 		std::vector<std::vector<size_t>> faces;
 		std::vector<GCT::Vector3> vertices;

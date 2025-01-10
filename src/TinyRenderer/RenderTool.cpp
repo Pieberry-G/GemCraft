@@ -45,7 +45,7 @@ namespace TinyRenderer {
 		polyscope::render::engine->setBackfaceCull(); // return to default setting
 	}
 
-    void RenderTool::BackProjection(const std::string& maskFile)
+    void RenderTool::BackProjection(MeshSubset& subset, const std::string& maskFile)
     {
         std::shared_ptr<Image> image = Image::Create(maskFile);
         std::vector<std::array<float, 4>> outData = image->ReadBuffer();
@@ -53,24 +53,14 @@ namespace TinyRenderer {
         std::vector<glm::vec4> faceIDs;
         faceIDs = polyscope::render::engine->tinyRendererBuffer[2]->getDataVector4();
 
-        //size_t faceIDStart = polyscope::state::facePickIndStart;
         for (size_t i = 0; i < 1024; i++) {
             for (size_t j = 0; j < 1024; j++) {
-                if (faceIDs[i * 1024 + j].x != -1.0f && outData[i * 1024 + j][0] == 1.0f) {
-                    size_t faceID = size_t(faceIDs[i * 1024 + j].x);
-                    polyscope::state::subset.AddFace(faceID);
+                if (std::abs(faceIDs[i * 1024 + j].x + 1.0f) >= 1e-6f && std::abs(outData[i * 1024 + j][0] - 1.0f) < 1e-6f) {
+                    size_t faceID = static_cast<size_t>(std::round(faceIDs[i * 1024 + j].x));
+                    subset.AddFace(faceID);
                 }
             }
         }
-
-        //auto& meshes = model.m_Meshes;
-        //size_t faceIDStart = polyscope::state::facePickIndStart;
-        //for (auto& mesh : meshes) {
-        //    for (size_t i = 0; i < mesh.Vertices.size(); i++) {
-        //        polyscope::state::subset.AddFace(faceIDStart + (size_t)i / 3);
-        //    }
-        //    faceIDStart += mesh.Vertices.size() / 3;
-        //}
     }
 
     void RenderTool::SaveRenderResult(const std::string& outFile, uint32_t location)
@@ -114,7 +104,7 @@ namespace TinyRenderer {
             // Store data in buffers
             std::vector<glm::vec3> positions;
             std::vector<glm::vec3> normals;
-            std::vector<glm::vec2> texCoords;
+            std::vector<glm::vec2> texcoords;
             std::vector<double> faceID;
 
             GC_CORE_ASSERT(mesh.Vertices.size() == mesh.Indices.size());
@@ -122,38 +112,38 @@ namespace TinyRenderer {
                 auto& vert = mesh.Vertices[i];
                 positions.push_back(vert.Position);
                 normals.push_back(vert.Normal);
-                texCoords.push_back(vert.TexCoord);
+                texcoords.push_back(vert.TexCoord);
                 faceID.push_back(double(i / 3));
             }
             faceIDStart += mesh.Vertices.size() / 3;
 
-            gltfShaderProgram->setAttribute("a_Position", positions);
-            gltfShaderProgram->setAttribute("a_Normal", normals);
-            gltfShaderProgram->setAttribute("a_TexCoord", texCoords);
-            gltfShaderProgram->setAttribute("a_FaceID", faceID);
+            gltfShaderProgram->setAttribute("a_position", positions);
+            gltfShaderProgram->setAttribute("a_normal", normals);
+            gltfShaderProgram->setAttribute("a_texcoord", texcoords);
+            gltfShaderProgram->setAttribute("a_faceID", faceID);
 
             // Set indices
             gltfShaderProgram->setIndex(mesh.Indices);
 
             // Set uniforms
             glm::vec3 lightDir = camera.GetForwardDirection();
-            gltfShaderProgram->setUniform("u_LightDir", lightDir);
+            gltfShaderProgram->setUniform("u_lightDir", lightDir);
 
             glm::mat4 modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1, 0, 0));
             modelMatrix = glm::translate(modelMatrix, -model.GetCenter());
             glm::mat4 viewMatrix = camera.GetViewMatrix();
             glm::mat4 projectionMatrix = camera.GetProjection();
-            gltfShaderProgram->setUniform("u_Model", glm::value_ptr(modelMatrix));
-            gltfShaderProgram->setUniform("u_View", glm::value_ptr(viewMatrix));
-            gltfShaderProgram->setUniform("u_Projection", glm::value_ptr(projectionMatrix));
-            gltfShaderProgram->setUniform("u_BaseColorFactor", materials[mesh.MaterialIndex].BaseColorFactor);
-            gltfShaderProgram->setUniform("u_BaseColorTexture", 0);
+            gltfShaderProgram->setUniform("u_model", glm::value_ptr(modelMatrix));
+            gltfShaderProgram->setUniform("u_view", glm::value_ptr(viewMatrix));
+            gltfShaderProgram->setUniform("u_projection", glm::value_ptr(projectionMatrix));
+            gltfShaderProgram->setUniform("u_baseColorFactor", materials[mesh.MaterialIndex].BaseColorFactor);
+            gltfShaderProgram->setUniform("u_baseColorTexture", 0);
 
             if (mesh.MaterialIndex == 0) {
-                gltfShaderProgram->setUniform("u_MaskColor", White);
+                gltfShaderProgram->setUniform("u_maskColor", White);
             }
             else if (mesh.MaterialIndex == 1) {
-                gltfShaderProgram->setUniform("u_MaskColor", Black);
+                gltfShaderProgram->setUniform("u_maskColor", Black);
             }
 
             // Bind textures

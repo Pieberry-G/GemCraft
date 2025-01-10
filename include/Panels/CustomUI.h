@@ -15,6 +15,7 @@ namespace GemCraft {
 		std::function<void()> GetDrawUIFunction() { return std::bind(&GemSelectionUI::DrawUI, this); }
 
 		const std::string& GetCurSelectedGem() const { return m_CurSelectedGem; }
+
 	private:
 		std::string m_CurSelectedGem;
 	};
@@ -28,6 +29,7 @@ namespace GemCraft {
 		std::function<void()> GetDrawUIFunction() { return std::bind(&GemSettingSelectionUI::DrawUI, this); }
 
 		GemSettingType GetCurSelectedGemSetting() const { return m_CurSelectedGemSetting; }
+
 	private:
 		GemSettingType m_CurSelectedGemSetting;
 	};
@@ -38,17 +40,12 @@ namespace GemCraft {
 		void DrawUI();
 		std::function<void()> GetDrawUIFunction() { return std::bind(&GemPatternUI::DrawUI, this); }
 
-		int GetNumberOfPaths() const { return m_NumberOfPaths; }
-		float GetPathSpacing() const { return m_PathSpacing; }
 		float GetExposureDepth() const { return m_ExposureDepth; }
 		float GetGemScale() const { return m_GemScale; }
-		float GetGemRotation() const { return m_GemRotation; }
+
 	private:
-		int m_NumberOfPaths = 1;
-		float m_PathSpacing = 1.0f;
 		float m_ExposureDepth = 0.3f;
 		float m_GemScale = 1.3f;
-		float m_GemRotation = 0.0f;
 	};
 
 } // namespace GemCraft

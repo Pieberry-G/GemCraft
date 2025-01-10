@@ -9,5 +9,5 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd textures/Color_883d94c6-5a87-4e44-9f9c-082a4b53534c.jpg
-map_Bump -bm 1.000000 textures/NormalGL_883d94c6-5a87-4e44-9f9c-082a4b53534c.jpg
+map_Kd Color_883d94c6-5a87-4e44-9f9c-082a4b53534c.jpg
+map_Bump -bm 1.000000 NormalGL_883d94c6-5a87-4e44-9f9c-082a4b53534c.jpg

@@ -25,6 +25,7 @@ namespace Tools {
 				std::filesystem::path filePath = entry.path();
 				if (filePath.extension() == ".obj") {
 
+					std::filesystem::create_directory("../dataIO");
 					std::filesystem::create_directory(outpath);
 					std::filesystem::create_directory(outpath / "Render");
 					std::filesystem::create_directory(outpath / "Mask");

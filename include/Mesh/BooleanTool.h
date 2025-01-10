@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Mesh/Mesh.h"
-#include "Mesh/GemLine.h"
+#include "Mesh/GemGroup.h"
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
@@ -76,7 +76,8 @@ namespace GemCraft {
 		BooleanTool(Scene* scene)
 			: m_Scene(scene) {}
 
-		std::shared_ptr<Mesh> DifferenceOperation(std::shared_ptr<Mesh> mainMesh, GemLine& gemLine);
+		std::shared_ptr<Mesh> DifferenceOperation(std::shared_ptr<Mesh>& ring, GemLine& gemLine);
+		std::shared_ptr<Mesh> DifferenceOperation(std::shared_ptr<Mesh>& ring, GemGroup& gemGroup);
 
 	private:
 		std::shared_ptr<CGALMesh> ConstructContexHull(std::shared_ptr<CGALMesh> mesh);

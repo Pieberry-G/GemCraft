@@ -9,7 +9,7 @@
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel     Kernel;
-typedef Kernel::Point_3                                     CGALPoint;
+typedef Kernel::Point_3                                         CGALPoint;
 typedef CGAL::Surface_mesh<CGALPoint>                           CGALMesh;
 typedef boost::graph_traits<CGALMesh>::halfedge_descriptor      halfedge_descriptor;
 typedef boost::graph_traits<CGALMesh>::edge_descriptor          edge_descriptor;
@@ -17,50 +17,26 @@ typedef boost::graph_traits<CGALMesh>::face_descriptor          face_descriptor;
 
 namespace CGALpmp = CGAL::Polygon_mesh_processing;
 
-#include "geometrycentral/surface/surface_mesh.h"
-#include "geometrycentral/surface/meshio.h"
-#include "geometrycentral/surface/vertex_position_geometry.h"
-namespace GCT = geometrycentral;
-namespace GCTsf = geometrycentral::surface;
-
 namespace GemCraft {
 
     Mesh::Mesh(const std::string& name, const std::string& filepath, bool isRing)
         : m_Name(name), m_Filepath(filepath)
     {
-        GC_CORE_TRACE("Loading model file: {0}", filepath);
-
-        //std::unique_ptr<GCTsf::SurfaceMesh> mesh;
-        //std::unique_ptr<GCTsf::VertexPositionGeometry> geometry;
-        //std::tie(mesh, geometry) = GCTsf::readSurfaceMesh(filepath);
-        //
-        //for (GCTsf::Vertex v : mesh->vertices()) {
-        //    m_Vertices.push_back({ geometry->inputVertexPositions[v].x, geometry->inputVertexPositions[v].y, geometry->inputVertexPositions[v].z });
-        //}
-        //for (GCTsf::Face f : mesh->faces()) {
-        //    std::vector<size_t> face;
-        //    for (GCTsf::Vertex v : f.adjacentVertices()) {
-        //        face.push_back(v.getIndex());
-        //    }
-        //    m_Faces.push_back(face);
-        //}
-
-
-        CGALMesh mesh;
-        if (!CGALpmp::IO::read_polygon_mesh(filepath, mesh)) {
+        CGALMesh cgalmesh;
+        if (!CGALpmp::IO::read_polygon_mesh(filepath, cgalmesh)) {
             GC_CORE_ASSERT(false, "Can not load mesh!");
         }
 
         //// Triangulate mesh
         //CGALpmp::triangulate_faces(mesh);
 
-        for (auto& v : mesh.vertices()) {
-            m_Vertices.push_back({ mesh.point(v).x(), mesh.point(v).y(), mesh.point(v).z() });
+        for (auto& v : cgalmesh.vertices()) {
+            m_Vertices.push_back({ cgalmesh.point(v).x(), cgalmesh.point(v).y(), cgalmesh.point(v).z() });
         }
-        for (auto& f : mesh.faces()) {
+        for (auto& f : cgalmesh.faces()) {
             CGAL::Vertex_around_face_iterator<CGALMesh> vbegin, vend;
             std::vector<size_t> face;
-            for (boost::tie(vbegin, vend) = mesh.vertices_around_face(mesh.halfedge(f)); vbegin != vend; ++vbegin) {
+            for (boost::tie(vbegin, vend) = cgalmesh.vertices_around_face(cgalmesh.halfedge(f)); vbegin != vend; ++vbegin) {
                 face.push_back(*vbegin);
             }
             m_Faces.push_back(face);

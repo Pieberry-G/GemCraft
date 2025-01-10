@@ -19,9 +19,9 @@ namespace GCTsf = geometrycentral::surface;
 namespace GemCraft {
 namespace FormatTool {
 
-	std::shared_ptr<CGALMesh> MeshToCGALMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform);
-	std::shared_ptr<Mesh> CGALMeshToMesh(std::shared_ptr<CGALMesh> cgalmesh, const glm::mat4& transform);
-	std::tuple<std::unique_ptr<GCTsf::ManifoldSurfaceMesh>, std::unique_ptr<GCTsf::VertexPositionGeometry>>	MeshToGCTMesh(std::shared_ptr<Mesh> mesh);
+	std::shared_ptr<CGALMesh> MeshToCGALMesh(const std::shared_ptr<Mesh>& mesh, const glm::mat4& transform);
+	std::shared_ptr<Mesh> CGALMeshToMesh(const std::shared_ptr<CGALMesh>& cgalmesh, const glm::mat4& transform);
+	std::tuple<std::unique_ptr<GCTsf::ManifoldSurfaceMesh>, std::unique_ptr<GCTsf::VertexPositionGeometry>>	MeshToGCTMesh(const std::shared_ptr<Mesh>& mesh);
 
 } // namespace FormatTool
 } // namespace GemCraft

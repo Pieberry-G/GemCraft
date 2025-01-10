@@ -8,11 +8,6 @@ namespace GemCraft {
     class MeshSubset
     {
     public:
-        std::set<size_t> m_Vertices;
-        std::set<size_t> m_Edges;
-        std::set<size_t> m_Faces;
-        std::set<size_t> m_Halfedges;
-
         /* Initialize an empty MeshSubset. */
         MeshSubset() = default;
 
@@ -23,6 +18,14 @@ namespace GemCraft {
             m_Edges = E;
             m_Faces = F;
             m_Halfedges = HE;
+        }
+
+        void Reset()
+        {
+            m_Vertices.clear();
+            m_Edges.clear();
+            m_Faces.clear();
+            m_Halfedges.clear();
         }
 
         /* Make a deep copy of the input MeshSubset and return it as a new
@@ -36,6 +39,11 @@ namespace GemCraft {
             std::set<size_t> newHalfedges = m_Halfedges;
             return MeshSubset(newVertices, newEdges, newFaces, newHalfedges);
         }
+
+        std::set<size_t>& Vertices() { return m_Vertices; }
+        std::set<size_t>& Edges() { return m_Edges; }
+        std::set<size_t>& Faces() { return m_Faces; }
+        std::set<size_t>& Halfedges() { return m_Halfedges; }
 
         /* Add a vertex to this subset. */
         void AddVertex(size_t index)
@@ -165,7 +173,7 @@ namespace GemCraft {
         }
 
         /* Removes a subset's vertices, edges, faces and halfedges from this subset. */
-        void deleteSubset(const MeshSubset& other)
+        void DeleteSubset(const MeshSubset& other)
         {
             this->DeleteVertices(other.m_Vertices);
             this->DeleteEdges(other.m_Edges);
@@ -212,6 +220,12 @@ namespace GemCraft {
             }
             std::cerr << std::endl;
         }
+
+    private:
+        std::set<size_t> m_Vertices;
+        std::set<size_t> m_Edges;
+        std::set<size_t> m_Faces;
+        std::set<size_t> m_Halfedges;
     };
 
 } // namespace GemCraft

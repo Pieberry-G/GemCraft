@@ -150,23 +150,12 @@ namespace GemCraft {
         ImGui::PushID("Gem Pattern UI");
         ImGui::Begin("Gem Pattern UI", nullptr);
 
-        if (ImGui::InputInt("Number of Paths", &m_NumberOfPaths, 1)) {
-            if (m_NumberOfPaths < 1) {
-                m_NumberOfPaths = 1;
-            }
-        }
-        if (ImGui::InputFloat("Path Spacing", &m_PathSpacing, 0.2f, 0.0f, "%.2f")) {
-            if (m_PathSpacing < 0.2f) {
-                m_PathSpacing = 0.2f;
-            }
-        }
         ImGui::InputFloat("Exposure Depth", &m_ExposureDepth, 0.1f, 0.0f, "%.2f");
         if (ImGui::InputFloat("Gem Scale", &m_GemScale, 0.1f, 0.0f, "%.2f")) {
             if (m_GemScale < 0.8f) {
                 m_GemScale = 0.8f;
             }
         }
-        ImGui::InputFloat("Gem Rotation (angle)", &m_GemRotation, 45.0f, 0.0f, "%.2f");
     }
 
 } // namespace GemCraft

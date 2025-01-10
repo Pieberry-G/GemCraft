@@ -22,7 +22,6 @@ namespace GemCraft {
 
         TinyRenderer::RenderTool::Init();
 
-
         m_ResourceManager = ResourceManager::Get();
         m_ResourceManager->PreloadGems();
         m_ResourceManager->PreloadGemSettings();
@@ -32,28 +31,24 @@ namespace GemCraft {
 
         m_Scene = std::make_shared<Scene>();
 
-        //Tools::DatasetBuilder builder;
-        //builder.BuildDataset();
+        Tools::DatasetBuilder builder;
+        builder.BuildDataset();
     }
 
 	void Application::Run()
     {
-        //const std::string gemPath = "../assets/Gems/RoundGem1.obj";
-        //m_Scene->AddGem("Gem", gemPath, glm::translate(glm::mat4(1.0f), { 0.0f, 0.0f, 0.0f }));
+        const std::string filepath = "../assets/meshes/Gen/gen005/gen005.obj";
+        GC_CORE_WARN("Loading ring file: {0}", filepath);
+        m_Scene->AddRing("Ring", filepath);
+        //m_Scene->InitGeodesic();
 
-        //const std::string ringPath = "../assets/meshes/Ring/ring0.stl";
-        const std::string ringPath = "../assets/meshes/Gen/gen002/gen002.obj";
-        //const std::string ringPath = "../assets/meshes/Ring/demo061.obj";
-        m_Scene->AddRing("Ring", ringPath);
-        m_Scene->InitGeodesic();
+        m_Scene->AutoSelectRegion();
 
         // Get indices for element picking
-        std::shared_ptr<Mesh> ring = m_Scene->GetRing();
+        std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
         polyscope::state::facePickIndStart = ring->nVertices();
         polyscope::state::edgePickIndStart = polyscope::state::facePickIndStart + ring->nFaces();
         polyscope::state::halfedgePickIndStart = polyscope::state::edgePickIndStart + ring->nEdges();
-
-        m_Scene->PreprocessRing();
 
         // Give control to the polyscope gui
         polyscope::show();
