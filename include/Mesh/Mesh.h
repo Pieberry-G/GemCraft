@@ -8,7 +8,7 @@ namespace GemCraft {
     class Mesh
     {
     public:
-        Mesh(const std::string& name, const std::string& filepath, bool isRing = false);
+        Mesh(const std::string& name, const std::string& filepath);
         Mesh(const std::string& name, const std::vector<glm::vec3>& vertices, const std::vector<std::vector<size_t>>& faces);
 
         std::string GetFilepath() const { return m_Filepath; }

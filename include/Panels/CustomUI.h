@@ -42,10 +42,12 @@ namespace GemCraft {
 
 		float GetExposureDepth() const { return m_ExposureDepth; }
 		float GetGemScale() const { return m_GemScale; }
+		float GetGridRotation() const { return m_GridRotation; }
 
 	private:
 		float m_ExposureDepth = 0.3f;
 		float m_GemScale = 1.3f;
+		float m_GridRotation = 0.0f;
 	};
 
 } // namespace GemCraft

@@ -32,8 +32,10 @@ namespace GemCraft {
 			}
 		}
 
+		void AutoRecognizeGems();
 		void AutoSelectRegion();
 		void RepairSelectedRegion();
+		void PlaceGemsAtTargets();
 	private:
 		void ConstructGeodesicPath();
 		void PlaceGemsOnPath();

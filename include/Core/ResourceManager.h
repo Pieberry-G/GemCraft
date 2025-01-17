@@ -35,10 +35,12 @@ namespace GemCraft {
 		std::shared_ptr<Mesh> CreateGem(const std::string& filepath);
 		std::shared_ptr<Mesh> CreateGemSetting(GemSettingType settingType);
 		std::shared_ptr<Mesh> CreateMandrel();
+		std::shared_ptr<Mesh> CreateCylinder();
 
 		void PreloadGems();
 		void PreloadGemSettings();
 		void PreloadMandrel();
+		void PreloadCylinder();
 
 		const std::unordered_map<std::string, MeshResource*>& GetGems() const { return m_GemResources; }
 		const std::unordered_map<GemSettingType, MeshResource*>& GetGemSettingResources() const { return m_GemSettingResources; }
@@ -51,6 +53,8 @@ namespace GemCraft {
 		std::unordered_map<std::string, MeshResource*> m_GemResources;
 		std::unordered_map<GemSettingType, MeshResource*> m_GemSettingResources;
 		MeshResource* m_Mandrel;
+		MeshResource* m_Cylinder;
+
 	private:
 		static ResourceManager* s_Instance;
 	};

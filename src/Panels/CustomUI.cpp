@@ -156,6 +156,7 @@ namespace GemCraft {
                 m_GemScale = 0.8f;
             }
         }
+        ImGui::InputFloat("Grid Rotation (angle)", &m_GridRotation, 15.0f, 0.0f, "%.2f");
     }
 
 } // namespace GemCraft

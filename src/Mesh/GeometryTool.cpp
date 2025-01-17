@@ -13,25 +13,23 @@
 
 namespace GemCraft {
 
-    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& mesh,
-        double max_hole_diam, int max_num_hole_edges)
+    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh,
+        double maxHoleDiam, int maxNumHoleEdges)
     {
-        int num_hole_edges = 0;
-        CGAL::Bbox_3 hole_bbox;
-        for (halfedge_descriptor hc : CGAL::halfedges_around_face(h, mesh))
+        int numHoleEdges = 0;
+        CGAL::Bbox_3 holeBBox;
+        for (halfedge_descriptor hc : CGAL::halfedges_around_face(h, cgalmesh))
         {
-            const CGALPoint& p = mesh.point(target(hc, mesh));
-
-            hole_bbox += p.bbox();
-            ++num_hole_edges;
+            const CGALPoint& p = cgalmesh.point(target(hc, cgalmesh));
+            holeBBox += p.bbox();
+            ++numHoleEdges;
 
             // Exit early, to avoid unnecessary traversal of large holes
-            if (num_hole_edges > max_num_hole_edges) return false;
-            if (hole_bbox.xmax() - hole_bbox.xmin() > max_hole_diam) return false;
-            if (hole_bbox.ymax() - hole_bbox.ymin() > max_hole_diam) return false;
-            if (hole_bbox.zmax() - hole_bbox.zmin() > max_hole_diam) return false;
+            if (numHoleEdges > maxNumHoleEdges) return false;
+            if (holeBBox.xmax() - holeBBox.xmin() > maxHoleDiam) return false;
+            if (holeBBox.ymax() - holeBBox.ymin() > maxHoleDiam) return false;
+            if (holeBBox.zmax() - holeBBox.zmin() > maxHoleDiam) return false;
         }
-
         return true;
     }
 
@@ -111,12 +109,17 @@ namespace GemCraft {
                 CGAL::parameters::face_output_iterator(std::back_inserter(patchFaces))
                 .vertex_output_iterator(std::back_inserter(patchVertices))));
 
+            //CGALpmp::triangulate_and_refine_hole(*cgalmesh,
+            //    h,
+            //    CGAL::parameters::face_output_iterator(std::back_inserter(patchFaces))
+            //    .vertex_output_iterator(std::back_inserter(patchVertices)));
+
             CGAL::Polygon_mesh_processing::border_halfedges(patchFaces, *cgalmesh,
                 std::back_inserter(border_halfedges));
         
             GC_CORE_TRACE("* Number of facets in constructed patch: {0}", patchFaces.size());
             GC_CORE_TRACE("* Number of vertices in constructed patch: {0}", patchVertices.size());
-            GC_CORE_TRACE("* Is fairing successful: {0}", success);
+            //GC_CORE_TRACE("* Is fairing successful: {0}", success);
             ++nb_holes;
 
             for (auto& face : patchFaces) {

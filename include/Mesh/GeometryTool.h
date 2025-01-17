@@ -5,9 +5,9 @@
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
-#include <CGAL/Polygon_mesh_processing/smooth_shape.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_hole.h>
 #include <CGAL/Polygon_mesh_processing/repair.h>
+#include <CGAL/Polygon_mesh_processing/smooth_shape.h>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel		Kernel;
 typedef Kernel::Point_3											CGALPoint;

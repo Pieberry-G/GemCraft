@@ -41,6 +41,14 @@ namespace GemCraft {
         return meshCopy;
     }
 
+    std::shared_ptr<Mesh> ResourceManager::CreateCylinder()
+    {
+        const Mesh& meshOrigin = *m_Cylinder->GetMesh();
+        std::shared_ptr<Mesh> meshCopy = std::make_shared<Mesh>(meshOrigin);
+
+        return meshCopy;
+    }
+
     void ResourceManager::PreloadGems()
     {
         static const std::string s_GemFolder = "../assets/meshes/Gems/";
@@ -90,6 +98,12 @@ namespace GemCraft {
     {
         Mesh* mesh = new Mesh("Mandrel", "../assets/meshes/GemSettings/Mandrel.obj");
         m_Mandrel = new MeshResource("Mandrel", nullptr, mesh);
+    }
+
+    void ResourceManager::PreloadCylinder()
+    {
+        Mesh* mesh = new Mesh("Cylinder", "../assets/meshes/GemSettings/Cylinder.obj");
+        m_Cylinder = new MeshResource("Cylinder", nullptr, mesh);
     }
 
     void ResourceManager::LoadGemSetting(GemSettingType settingType)

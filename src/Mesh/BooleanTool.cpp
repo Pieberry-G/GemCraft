@@ -4,6 +4,8 @@
 #include "Core/Scene.h"
 #include "Core/ResourceManager.h"
 
+#include <CGAL/Polygon_mesh_processing/repair.h>
+
 namespace GemCraft {
 
 	std::shared_ptr<Mesh> BooleanTool::DifferenceOperation(std::shared_ptr<Mesh>& ring, GemLine& gemLine)
@@ -56,7 +58,7 @@ namespace GemCraft {
 		// GemSettings
 		for (size_t i = 0; i < gemSettings.size(); i++) {
 			std::shared_ptr<CGALMesh> mesh3 = FormatTool::MeshToCGALMesh(gemSettings[i], gemSettings[i]->GetPsTransform());
-			mesh3 = ConstructContexHull(mesh3);
+			//mesh3 = ConstructContexHull(mesh3);
 
 			Exact_point_map mesh3ExactPoints = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
 			Exact_vertex_point_map mesh3Vpm(mesh3ExactPoints, *mesh3);
@@ -152,6 +154,7 @@ namespace GemCraft {
 																		CGALparams::vertex_point_map(mesh1Vpm),
 																		CGALparams::vertex_point_map(mesh2Vpm),
 																		CGALparams::vertex_point_map(mesh1Vpm));
+		mesh1->collect_garbage();
 
 		if (valid_difference) {
 			GC_CORE_INFO("Difference was successfully computed.");
@@ -193,6 +196,20 @@ namespace GemCraft {
 				CGALparams::vertex_point_map(mesh2Vpm));
 		}
 
+		// Cylinder
+		for (size_t i = 0; i < gems.size(); i++) {
+			std::shared_ptr<Mesh> cylinder = ResourceManager::Get()->CreateCylinder();
+			std::shared_ptr<CGALMesh> mesh3 = FormatTool::MeshToCGALMesh(cylinder, gems[i]->GetPsTransform());
+
+			Exact_point_map mesh3ExactPoints = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
+			Exact_vertex_point_map mesh3Vpm(mesh3ExactPoints, *mesh3);
+
+			CGALpmp::corefine_and_compute_union(*mesh2, *mesh3, *mesh2,
+				CGALparams::vertex_point_map(mesh2Vpm),
+				CGALparams::vertex_point_map(mesh3Vpm),
+				CGALparams::vertex_point_map(mesh2Vpm));
+		}
+
 		// Mandrels
 		for (size_t i = 0; i < gems.size(); i++) {
 			std::shared_ptr<Mesh> mandrel = ResourceManager::Get()->CreateMandrel();
@@ -210,7 +227,7 @@ namespace GemCraft {
 		// GemSettings
 		for (size_t i = 0; i < gemSettings.size(); i++) {
 			std::shared_ptr<CGALMesh> mesh3 = FormatTool::MeshToCGALMesh(gemSettings[i], gemSettings[i]->GetPsTransform());
-			mesh3 = ConstructContexHull(mesh3);
+			//mesh3 = ConstructContexHull(mesh3);
 
 			Exact_point_map mesh3ExactPoints = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
 			Exact_vertex_point_map mesh3Vpm(mesh3ExactPoints, *mesh3);
@@ -225,9 +242,13 @@ namespace GemCraft {
 			CGALparams::vertex_point_map(mesh1Vpm),
 			CGALparams::vertex_point_map(mesh2Vpm),
 			CGALparams::vertex_point_map(mesh1Vpm));
+		mesh1->collect_garbage();
 
 		if (valid_difference) {
 			GC_CORE_INFO("Difference was successfully computed.");
+		}
+		else {
+			GC_CORE_INFO("Difference crashed.");
 		}
 
 		return FormatTool::CGALMeshToMesh(mesh1, inverseTransform);

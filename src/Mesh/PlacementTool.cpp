@@ -5,8 +5,10 @@
 
 #include "Mesh/FormatTool.h"
 
-#include <CGAL/Polygon_mesh_processing/remesh.h>
-#include <CGAL/Polygon_mesh_processing/repair.h>
+#include <CGAL/Delaunay_triangulation_2.h>
+#include <CGAL/natural_neighbor_coordinates_2.h>
+
+typedef CGAL::Delaunay_triangulation_2<Kernel>      Triangulation;
 
 namespace GemCraft {
 
@@ -218,7 +220,10 @@ namespace GemCraft {
 
 	GemGroup PlacementTool::PlaceGemsOnSelectedRegion()
 	{
+		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
 		const GemSettingSelectionUI& gemSettingSelectionUI = m_Scene->m_GemSettingSelectionUI;
+		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
+
 		GemSettingType settingType = gemSettingSelectionUI.GetCurSelectedGemSetting();
 		if (settingType == GemSettingType::Pave || settingType == GemSettingType::Shovel || settingType == GemSettingType::Channel) {
 			return GemGroup(settingType, std::vector<std::shared_ptr<Mesh>>(), std::vector<std::shared_ptr<Mesh>>());
@@ -236,97 +241,155 @@ namespace GemCraft {
 		CGALpmp::remove_isolated_vertices(*cgalSubmesh);
 		cgalSubmesh->collect_garbage();
 
-		for (int iter = 0; iter < 5; iter++) {
-			std::vector<CGALMesh::Face_index> facesToRemove;
-			for (auto& f : cgalSubmesh->faces()) {
-				bool isBorderFace = false;
-				CGAL::Vertex_around_face_iterator<CGALMesh> vbegin, vend;
-				for (boost::tie(vbegin, vend) = cgalSubmesh->vertices_around_face(cgalSubmesh->halfedge(f)); vbegin != vend; ++vbegin) {
-					for (auto h : halfedges_around_target(*vbegin, *cgalSubmesh)) {
-						if (is_border(h, *cgalSubmesh)) {
-							isBorderFace = true;
-						}
-					}
-				}
-				if (isBorderFace) {
-					facesToRemove.push_back(f);
-				}
-			}
-			for (const auto& f : facesToRemove) {
-				CGAL::Euler::remove_face(halfedge(f, *cgalSubmesh), *cgalSubmesh);
-			}
-			cgalSubmesh->collect_garbage();
+
+
+		// a halfedge on the border
+		halfedge_descriptor bhd = CGAL::Polygon_mesh_processing::longest_border(*cgalSubmesh).first;
+
+		// The UV property map that holds the parameterized values
+		typedef CGALMesh::Property_map<vertex_descriptor, CGALPoint2>  UV_pmap;
+		UV_pmap uv_map = cgalSubmesh->add_property_map<vertex_descriptor, CGALPoint2>("h:uv").first;
+
+		SMP::ARAP_parameterizer_3<CGALMesh> parameterizer;
+		SMP::Error_code err = SMP::parameterize(*cgalSubmesh, parameterizer, bhd, uv_map);
+
+		std::ofstream out("parameterize.off");
+		SMP::IO::output_uvmap_to_off(*cgalSubmesh, bhd, uv_map, out);
+
+		//CGAL::IO::write_polygon_mesh("submesh.obj", *cgalSubmesh, CGAL::parameters::stream_precision(17));
+
+
+		Triangulation t;
+		std::vector<CGALPoint2> points;
+		std::map<CGALPoint2, vertex_descriptor> vertex_map;
+		for (auto v : vertices(*cgalSubmesh)) {
+			t.insert(uv_map[v]);
+			vertex_map[uv_map[v]] = v;
+			points.push_back(uv_map[v]);
 		}
 
-		double target_edge_length = 2.5;
-		unsigned int nb_iter = 10;
-
-		std::vector<edge_descriptor> border;
-		CGALpmp::border_halfedges(faces(*cgalSubmesh), *cgalSubmesh, boost::make_function_output_iterator(HalfedgeToEdge(*cgalSubmesh, border)));
-		CGALpmp::split_long_edges(border, target_edge_length, *cgalSubmesh);
-
-		CGALpmp::isotropic_remeshing(faces(*cgalSubmesh), target_edge_length, *cgalSubmesh,
-			CGAL::parameters::number_of_iterations(nb_iter)
-			.protect_constraints(true)); //i.e. protect border, here
-
-		CGAL::IO::write_polygon_mesh("remeshed.obj", *cgalSubmesh, CGAL::parameters::stream_precision(17));
-
-		std::shared_ptr<Mesh> remeshedMesh = std::make_shared<Mesh>("Remeshed Result 2", "remeshed.obj", true);
-		std::shared_ptr<CGALMesh> remeshedCGALMesh = FormatTool::MeshToCGALMesh(remeshedMesh, remeshedMesh->GetPsTransform());
-
-		for (int iter = 0; iter < 1; iter++) {
-			std::vector<CGALMesh::Face_index> facesToRemove;
-			for (auto& f : remeshedCGALMesh->faces()) {
-				bool isBorderFace = false;
-				CGAL::Vertex_around_face_iterator<CGALMesh> vbegin, vend;
-				for (boost::tie(vbegin, vend) = remeshedCGALMesh->vertices_around_face(remeshedCGALMesh->halfedge(f)); vbegin != vend; ++vbegin) {
-					for (auto h : halfedges_around_target(*vbegin, *remeshedCGALMesh)) {
-						if (is_border(h, *remeshedCGALMesh)) {
-							isBorderFace = true;
-						}
-					}
-				}
-				if (isBorderFace) {
-					facesToRemove.push_back(f);
-				}
-			}
-			for (const auto& f : facesToRemove) {
-				CGAL::Euler::remove_face(halfedge(f, *remeshedCGALMesh), *remeshedCGALMesh);
-			}
-			remeshedCGALMesh->collect_garbage();
+		double min_x = std::numeric_limits<double>::max();
+		double max_x = std::numeric_limits<double>::min();
+		double min_y = std::numeric_limits<double>::max();
+		double max_y = std::numeric_limits<double>::min();
+		for (const auto& p : points) {
+			min_x = std::min(min_x, p.x());
+			max_x = std::max(max_x, p.x());
+			min_y = std::min(min_y, p.y());
+			max_y = std::max(max_y, p.y());
 		}
-
-		std::vector<CGALPoint> points;
-		for (auto& v : remeshedCGALMesh->vertices()) {
-			bool isBorderVertex = false;
-			for (auto h : halfedges_around_target(v, *remeshedCGALMesh)) {
-				if (is_border(h, *remeshedCGALMesh)) {
-					isBorderVertex = true;
-				}
-			}
-			if (isBorderVertex) {
-			}
-			points.push_back({ remeshedCGALMesh->point(v).x(), remeshedCGALMesh->point(v).y(), remeshedCGALMesh->point(v).z() });
+		CGALPoint2 center((min_x + max_x) / 2.0, (min_y + max_y) / 2.0);
+		double maxDistance = 0.0;
+		for (const auto& p : points) {
+			double distance = CGAL::sqrt(CGAL::squared_distance(center, p));
+			maxDistance = std::max(maxDistance, distance);
 		}
-
-		std::ofstream output("sampled_points.xyz");
-		for (const auto& point : points) {
-			output << point << std::endl;
-		}
+		int nGrid = 1.5 * maxDistance / 2.0;
 
 		std::vector<glm::vec3> positions;
-		for (const auto& point : points) {
-			positions.push_back({ point.x(), point.y(), point.z() });
+		for (int i = -nGrid; i <= nGrid; i++) {
+			for (int j = -nGrid; j <= nGrid; j++) {
+				glm::vec2 offset = { i * 2.0f, j * 2.0f };
+				float angleRad = glm::radians(gemPatternUI.GetGridRotation());
+				float cos_theta = std::cos(angleRad);
+				float sin_theta = std::sin(angleRad);
+				glm::vec2 rotatedOffset;
+				rotatedOffset.x = offset.x * cos_theta - offset.y * sin_theta;
+				rotatedOffset.y = offset.x * sin_theta + offset.y * cos_theta;
+
+				CGALPoint2 query(center.x() + rotatedOffset.x, center.x() + rotatedOffset.y);
+				Triangulation::Face_handle fh = t.locate(query);
+				std::vector<std::pair<CGALPoint2, double>> coords;
+				double norm = CGAL::natural_neighbor_coordinates_2(t, query, std::back_inserter(coords)).second;
+				CGALPoint targetPoint(0, 0, 0);
+				for (const auto& pair : coords) {
+					vertex_descriptor v = vertex_map[pair.first];
+					double weight = pair.second / norm;
+					CGALVector tempVector = { cgalSubmesh->point(v).x(), cgalSubmesh->point(v).y(), cgalSubmesh->point(v).z() };
+					tempVector = weight * tempVector;
+					targetPoint += tempVector;
+				}
+
+				size_t faceID = geodesic->LocatePoint(targetPoint).first;
+				std::set<size_t> selectedRegion = polyscope::state::selectedRegion.Faces();
+				if (selectedRegion.find(faceID) != selectedRegion.end()) {
+					positions.push_back({ targetPoint.x(), targetPoint.y(), targetPoint.z() });
+				}
+			}
 		}
 
 		PlacementTool placerTool(m_Scene);
 		GemGroup gemGroup = placerTool.PlaceGemsOnPositions(positions);
 
-		// Show remesh result.
-		m_Scene->AddMesh(remeshedMesh);
-		remeshedMesh->GetPsMesh()->setEnabled(false);
-
 		return gemGroup;
+	}
+
+	GemGroup PlacementTool::PlaceGemsAtTargets()
+	{
+		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
+		const GemSelectionUI& gemSelectionUI = m_Scene->m_GemSelectionUI;
+		const GemSettingSelectionUI& gemSettingSelectionUI = m_Scene->m_GemSettingSelectionUI;
+		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
+
+		GemSettingType settingType = gemSettingSelectionUI.GetCurSelectedGemSetting();
+		float exposureDepth = gemPatternUI.GetExposureDepth();
+
+		float gemScale = gemPatternUI.GetGemScale();
+		float spacing = (GetParams(settingType).GemSpacing + 1.0f) * gemScale;
+
+		std::vector<std::shared_ptr<Mesh>> gems;
+		std::vector<std::shared_ptr<Mesh>> gemSettings;
+
+		std::vector<glm::vec3> positions = polyscope::state::targetPositions;
+		std::vector<glm::vec3> normals = polyscope::state::targetNormals;
+
+		for (size_t i = 0; i < positions.size(); i++) {
+			GemSpecification spec;
+			spec.Filepath = gemSelectionUI.GetCurSelectedGem();
+			spec.Position = positions[i];
+			spec.Normal = normals[i];
+
+			glm::vec3 v;
+			if (std::abs(spec.Normal.x) < std::abs(spec.Normal.y)) {
+				v = glm::vec3(1.0f, 0.0f, 0.0f);
+			}
+			else {
+				v = glm::vec3(0.0f, 1.0f, 0.0f);
+			}
+			spec.Forward = glm::cross(spec.Normal, v);
+
+			spec.ExposureDepth = 0.0f;
+			spec.Scale = 2.0f;
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(3) << "Gem (" << spec.Position.x << "," << spec.Position.y << "," << spec.Position.z << ")";
+			spec.Name = ss.str();
+			gems.push_back(PlaceGem(spec));
+		}
+
+		for (size_t i = 0; i < positions.size(); i++) {
+			GemSettingSpecification spec;
+			spec.SettingType = settingType;
+			spec.Position = positions[i];
+			spec.Normal = normals[i];
+
+			glm::vec3 v;
+			if (std::abs(spec.Normal.x) < std::abs(spec.Normal.y)) {
+				v = glm::vec3(1.0f, 0.0f, 0.0f);
+			}
+			else {
+				v = glm::vec3(0.0f, 1.0f, 0.0f);
+			}
+			spec.Forward = glm::cross(spec.Normal, v);
+
+			spec.ExposureDepth = 0.0f;
+			spec.Scale = 2.0f;
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(3) << "GemSetting (" << spec.Position.x << "," << spec.Position.y << "," << spec.Position.z << ")";
+			spec.Name = ss.str();
+			gemSettings.push_back(PlaceGemSetting(spec));
+		}
+
+		return GemGroup(settingType, gems, gemSettings);
 	}
 
 	GemGroup PlacementTool::PlaceGemsOnPositions(const std::vector<glm::vec3>& positions)

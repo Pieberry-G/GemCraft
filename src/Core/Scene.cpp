@@ -23,11 +23,12 @@ namespace GemCraft {
 	void Scene::OnKeyReleased(KeyCode key)
 	{
 		static const std::unordered_map<KeyCode, std::function<void()>> functionMap = {
-			{ Key::C,  GC_BIND_EVENT_FN(Scene::ConstructGeodesicPath)     },
-			{ Key::V,  GC_BIND_EVENT_FN(Scene::PlaceGemsOnPath)		      },
-			{ Key::Q,  GC_BIND_EVENT_FN(Scene::RepairSelectedRegion)      },
-			{ Key::W,  GC_BIND_EVENT_FN(Scene::PlaceGemsOnSelectedRegion) },
-			{ Key::E,  GC_BIND_EVENT_FN(Scene::BooleanOpDifference)		  },
+			{ Key::C, GC_BIND_EVENT_FN(Scene::ConstructGeodesicPath)     },
+			{ Key::V, GC_BIND_EVENT_FN(Scene::PlaceGemsOnPath)		     },
+			{ Key::Q, GC_BIND_EVENT_FN(Scene::RepairSelectedRegion)      },
+			{ Key::W, GC_BIND_EVENT_FN(Scene::PlaceGemsOnSelectedRegion) },
+			{ Key::P, GC_BIND_EVENT_FN(Scene::PlaceGemsAtTargets)		 },
+			{ Key::E, GC_BIND_EVENT_FN(Scene::BooleanOpDifference)		 },
 		};
 
 		auto it = functionMap.find(key);
@@ -76,6 +77,13 @@ namespace GemCraft {
 		m_Meshes.back()->GetPsMesh()->setSurfaceColor(glm::vec3(0.750, 0.750, 0.750));
 	}
 
+	void Scene::AutoRecognizeGems()
+	{
+		RegionSelectionTool regionSelectionTool(this);
+		regionSelectionTool.AutoRecognizeGems();
+		regionSelectionTool.ShowResult();
+	}
+
 	void Scene::AutoSelectRegion()
 	{
 		RegionSelectionTool regionSelectionTool(this);
@@ -112,9 +120,29 @@ namespace GemCraft {
 		m_GemLines.push_back(gemLine);
 	}
 
+	void Scene::PlaceGemsAtTargets()
+	{
+		PlacementTool placerTool(this);
+		GemGroup gemGroup = placerTool.PlaceGemsAtTargets();
+		m_GemGroups.push_back(gemGroup);
+	}
+
 	void Scene::PlaceGemsOnSelectedRegion()
 	{
 		PlacementTool placerTool(this);
+		if (!m_GemGroups.empty()) {
+			for (auto& gemGroup : m_GemGroups) {
+				const std::vector<std::shared_ptr<Mesh>>& gems = gemGroup.GetGems();
+				for (auto& gem : gems) {
+					gem->RemoveFromPolyscope();
+				}
+				const std::vector<std::shared_ptr<Mesh>>& gemSettings = gemGroup.GetGemSettings();
+				for (auto& gemSetting : gemSettings) {
+					gemSetting->RemoveFromPolyscope();
+				}
+			}
+		}
+		m_GemGroups.clear();
 		GemGroup gemGroup = placerTool.PlaceGemsOnSelectedRegion();
 		m_GemGroups.push_back(gemGroup);
 	}

@@ -37,7 +37,7 @@
 | CGAL | CGAL是一个开源软件项目，以C++库的形式提供高效可靠的几何算法，适用于需要几何计算的各个领域。 | https://www.cgal.org/ |
 | Geometry-central | Geometry-central是一个现代C++数据结构和算法库，用于几何处理，特别侧重于表面网格。 | https://geometry-central.net/ |
 | Polyscope |  Polyscope 是一个 C++/Python 查看器和用户界面，用于查看网格和点云等 3D 数据。它允许您注册数据并快速生成信息丰富且美观的可视化效果。 | https://polyscope.run/ |
-| SAM-Adapter | 把分割大模型SAM适配到下游项目，用于钻石区域检测。 | |
+| SAM-Adapter | 把分割大模型SAM适配到下游项目，用于钻石区域检测。 | https://github.com/tianrun-chen/SAM-Adapter-PyTorch |
 | spdlog | 高性能C++日志库。 | https://github.com/gabime/spdlog |
 | tinygltf | 用于渲染的gltf/glb模型文件读取器。 | https://github.com/syoyo/tinygltf |
 | tinyobjloader | 用于渲染的obj模型文件读取器。 | https://github.com/tinyobjloader/tinyobjloader |
