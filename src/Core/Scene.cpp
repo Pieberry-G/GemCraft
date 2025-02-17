@@ -2,6 +2,7 @@
 #include "Core/ResourceManager.h"
 
 #include "Mesh/GeodesicTool.h"
+#include "Mesh/SurfaceCleanerTool.h"
 #include "Mesh/RegionSelectionTool.h"
 #include "Mesh/GeometryTool.h"
 #include "Mesh/PlacementTool.h"
@@ -11,9 +12,6 @@ namespace GemCraft {
 
 	Scene::Scene()
 	{
-		m_GemSelectionUI.Init();
-		polyscope::state::userCallbacks.push_back(m_GemSelectionUI.GetDrawUIFunction());
-
 		m_GemSettingSelectionUI.Init();
 		polyscope::state::userCallbacks.push_back(m_GemSettingSelectionUI.GetDrawUIFunction());
 
@@ -67,6 +65,8 @@ namespace GemCraft {
 		m_Ring->AddToPolyscope();
 		m_Ring->GetPsMesh()->setMaterial("clay");
 		m_Ring->GetPsMesh()->setSurfaceColor(glm::vec3(0.750, 0.750, 0.750));
+		
+		m_RingPath = filepath;
 	}
 
 	void Scene::AddMesh(std::shared_ptr<Mesh>& mesh)
@@ -75,6 +75,13 @@ namespace GemCraft {
 		m_Meshes.back()->AddToPolyscope();
 		m_Meshes.back()->GetPsMesh()->setMaterial("clay");
 		m_Meshes.back()->GetPsMesh()->setSurfaceColor(glm::vec3(0.750, 0.750, 0.750));
+	}
+
+	void Scene::CleanSurface()
+	{
+		SurfaceCleanerTool surfaceCleanerTool(this);
+		surfaceCleanerTool.CleanSurface();
+		surfaceCleanerTool.ShowResult();
 	}
 
 	void Scene::AutoRecognizeGems()

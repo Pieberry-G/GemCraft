@@ -9,8 +9,9 @@ namespace GemCraft {
         Prong,      // ◊¶œ‚
         Claw,       // ª¢◊¶œ‚
         Invisible,  // Œﬁ±ﬂœ‚
-        Shovel,     // ≤˘±ﬂœ‚
-        Channel,    // πÏµ¿œ‚
+        //Shovel,     // ≤˘±ﬂœ‚
+        //Channel,    // πÏµ¿œ‚
+        Gen003,
     };
 
     inline std::string GetName(GemSettingType settingType)
@@ -21,8 +22,9 @@ namespace GemCraft {
             { GemSettingType::Prong,     "Prong Setting"     },
             { GemSettingType::Claw,      "Claw Setting"      },
             { GemSettingType::Invisible, "Invisible Setting" },
-            { GemSettingType::Shovel,    "Shovel Setting"    },
-            { GemSettingType::Channel,   "Channel Setting"   },
+            //{ GemSettingType::Shovel,    "Shovel Setting"    },
+            //{ GemSettingType::Channel,   "Channel Setting"   },
+            { GemSettingType::Gen003,    "Gen003 Setting"    },
         };
 
         auto it = enumToString.find(settingType);
@@ -46,8 +48,9 @@ namespace GemCraft {
             { GemSettingType::Prong,     { 0.100f } },
             { GemSettingType::Claw,      { 0.133f } },
             { GemSettingType::Invisible, { 0.100f } },
-            { GemSettingType::Shovel,    { 0.133f } },
-            { GemSettingType::Channel,   { 0.100f } },
+            //{ GemSettingType::Shovel,    { 0.133f } },
+            //{ GemSettingType::Channel,   { 0.100f } },
+            { GemSettingType::Gen003,    { 0.100f } },
         };
 
         auto it = enumToSettingParams.find(settingType);

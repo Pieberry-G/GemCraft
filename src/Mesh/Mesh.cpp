@@ -20,7 +20,7 @@ namespace CGALpmp = CGAL::Polygon_mesh_processing;
 namespace GemCraft {
 
     Mesh::Mesh(const std::string& name, const std::string& filepath)
-        : m_Name(name), m_Filepath(filepath)
+        : m_Name(name)
     {
         CGALMesh cgalmesh;
         if (!CGALpmp::IO::read_polygon_mesh(filepath, cgalmesh)) {

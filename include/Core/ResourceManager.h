@@ -8,15 +8,18 @@ namespace GemCraft {
 	class MeshResource
 	{
 	public:
-		MeshResource(const std::string& name, std::shared_ptr<polyscope::render::TextureBuffer> icon, Mesh* mesh)
-			: m_Name(name), m_Icon(icon), m_Mesh(mesh) {}
+		MeshResource(const std::string& name, std::shared_ptr<polyscope::render::TextureBuffer> icon, Mesh* gemMesh, Mesh* gemSettingMesh)
+			: m_Name(name), m_Icon(icon), m_GemMesh(gemMesh), m_GemSettingMesh(gemSettingMesh) {}
 
 		void* GetIconTextureID() const { return m_Icon->getNativeHandle(); }
-		const Mesh* GetMesh() const { return m_Mesh; }
+		const Mesh* GetGemMesh() const { return m_GemMesh; }
+		const Mesh* GetGemSettingMesh() const { return m_GemSettingMesh; }
+
 	private:
 		std::string m_Name;
 		std::shared_ptr<polyscope::render::TextureBuffer> m_Icon;
-		const Mesh* m_Mesh;
+		const Mesh* m_GemMesh;
+		const Mesh* m_GemSettingMesh;
 	};
 
 	class ResourceManager
@@ -32,26 +35,24 @@ namespace GemCraft {
 			return s_Instance;
 		}
 
-		std::shared_ptr<Mesh> CreateGem(const std::string& filepath);
+		std::shared_ptr<Mesh> CreateGem(GemSettingType settingType);
 		std::shared_ptr<Mesh> CreateGemSetting(GemSettingType settingType);
 		std::shared_ptr<Mesh> CreateMandrel();
 		std::shared_ptr<Mesh> CreateCylinder();
 
-		void PreloadGems();
 		void PreloadGemSettings();
 		void PreloadMandrel();
 		void PreloadCylinder();
 
-		const std::unordered_map<std::string, MeshResource*>& GetGems() const { return m_GemResources; }
-		const std::unordered_map<GemSettingType, MeshResource*>& GetGemSettingResources() const { return m_GemSettingResources; }
+		const std::unordered_map<GemSettingType, MeshResource*>& GetResources() const { return m_Resources; }
+
 	private:
 		ResourceManager() = default;
 
 		void LoadGemSetting(GemSettingType settingType);
 
 	private:
-		std::unordered_map<std::string, MeshResource*> m_GemResources;
-		std::unordered_map<GemSettingType, MeshResource*> m_GemSettingResources;
+		std::unordered_map<GemSettingType, MeshResource*> m_Resources;
 		MeshResource* m_Mandrel;
 		MeshResource* m_Cylinder;
 

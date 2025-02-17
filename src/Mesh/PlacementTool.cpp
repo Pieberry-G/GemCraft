@@ -26,12 +26,9 @@ namespace GemCraft {
 		std::vector<edge_descriptor>& m_Edges;
 	};
 
-	std::shared_ptr<Mesh> PlacementTool::PlaceGem(const std::string& name, const std::string& filepath, const glm::mat4& transform)
+	std::shared_ptr<Mesh> PlacementTool::PlaceGem(const std::string& name, GemSettingType settingType, const glm::mat4& transform)
 	{
-		std::shared_ptr<Mesh> gem = ResourceManager::Get()->CreateGem(filepath);
-		if (!gem) {
-			gem = std::make_shared<Mesh>("Gem", filepath);
-		}
+		std::shared_ptr<Mesh> gem = ResourceManager::Get()->CreateGem(settingType);
 
 		gem->SetName(name);
 		gem->AddToPolyscope(transform);
@@ -48,7 +45,7 @@ namespace GemCraft {
 		transform = glm::rotate(transform, glm::radians(-90.0f), { 1.0f, 0.0f, 0.0f });
 		transform = glm::scale(transform, glm::vec3(spec.Scale));
 
-		return PlaceGem(spec.Name, spec.Filepath, transform);
+		return PlaceGem(spec.Name, spec.SettingType, transform);
 	}
 
 	std::shared_ptr<Mesh> PlacementTool::PlaceGemSetting(const std::string& name, GemSettingType settingType, const glm::mat4& transform)
@@ -132,13 +129,12 @@ namespace GemCraft {
 	GemLine PlacementTool::PlaceGemsOnPath(const Path& path)
 	{
 		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
-		const GemSelectionUI& gemSelectionUI = m_Scene->m_GemSelectionUI;
 		const GemSettingSelectionUI& gemSettingSelectionUI = m_Scene->m_GemSettingSelectionUI;
 		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
 
 		GemSettingType settingType = gemSettingSelectionUI.GetCurSelectedGemSetting();
 		float exposureDepth = gemPatternUI.GetExposureDepth();
-		if (settingType == GemSettingType::Shovel || settingType == GemSettingType::Channel) exposureDepth = 0.0f;
+		//if (settingType == GemSettingType::Shovel || settingType == GemSettingType::Channel) exposureDepth = 0.0f;
 
 		float gemScale = gemPatternUI.GetGemScale();
 		float spacing = (GetParams(settingType).GemSpacing + 1.0f) * gemScale;
@@ -149,7 +145,7 @@ namespace GemCraft {
 		PositionsAndForwards result = CalculatePositionsAndForwards(path, spacing);
 		for (size_t j = 1; j < result.BasePositions.size(); j++) {
 			GemSpecification spec;
-			spec.Filepath = gemSelectionUI.GetCurSelectedGem();
+			spec.SettingType = settingType;
 			spec.Position = result.GemPositions[j - 1];
 			spec.Forward = result.GemForwards[j - 1];
 			spec.Normal = geodesic->CalculateNormal(spec.Position);
@@ -163,7 +159,7 @@ namespace GemCraft {
 
 		switch (settingType)
 		{
-		case GemSettingType::Pave:
+		/*case GemSettingType::Pave:
 		case GemSettingType::Shovel:
 			for (size_t j = 1; j < result.BasePositions.size(); j++) {
 				GemSettingSpecification spec;
@@ -198,7 +194,7 @@ namespace GemCraft {
 					gemSettings.push_back(PlaceGemSetting(spec));
 				}
 			}
-			break;
+			break;*/
 		default:
 			for (size_t j = 1; j < result.BasePositions.size(); j++) {
 				GemSettingSpecification spec;
@@ -225,9 +221,9 @@ namespace GemCraft {
 		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
 
 		GemSettingType settingType = gemSettingSelectionUI.GetCurSelectedGemSetting();
-		if (settingType == GemSettingType::Pave || settingType == GemSettingType::Shovel || settingType == GemSettingType::Channel) {
-			return GemGroup(settingType, std::vector<std::shared_ptr<Mesh>>(), std::vector<std::shared_ptr<Mesh>>());
-		}
+		//if (settingType == GemSettingType::Pave || settingType == GemSettingType::Shovel || settingType == GemSettingType::Channel) {
+		//	return GemGroup(settingType, std::vector<std::shared_ptr<Mesh>>(), std::vector<std::shared_ptr<Mesh>>());
+		//}
 
 		std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
 		std::vector<glm::vec3> originVertices = ring->GetVertices();
@@ -327,7 +323,6 @@ namespace GemCraft {
 	GemGroup PlacementTool::PlaceGemsAtTargets()
 	{
 		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
-		const GemSelectionUI& gemSelectionUI = m_Scene->m_GemSelectionUI;
 		const GemSettingSelectionUI& gemSettingSelectionUI = m_Scene->m_GemSettingSelectionUI;
 		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
 
@@ -345,7 +340,7 @@ namespace GemCraft {
 
 		for (size_t i = 0; i < positions.size(); i++) {
 			GemSpecification spec;
-			spec.Filepath = gemSelectionUI.GetCurSelectedGem();
+			spec.SettingType = settingType;
 			spec.Position = positions[i];
 			spec.Normal = normals[i];
 
@@ -359,7 +354,7 @@ namespace GemCraft {
 			spec.Forward = glm::cross(spec.Normal, v);
 
 			spec.ExposureDepth = 0.0f;
-			spec.Scale = 2.0f;
+			spec.Scale = gemScale;
 			std::stringstream ss;
 			ss << std::fixed << std::setprecision(3) << "Gem (" << spec.Position.x << "," << spec.Position.y << "," << spec.Position.z << ")";
 			spec.Name = ss.str();
@@ -382,7 +377,7 @@ namespace GemCraft {
 			spec.Forward = glm::cross(spec.Normal, v);
 
 			spec.ExposureDepth = 0.0f;
-			spec.Scale = 2.0f;
+			spec.Scale = gemScale;
 			std::stringstream ss;
 			ss << std::fixed << std::setprecision(3) << "GemSetting (" << spec.Position.x << "," << spec.Position.y << "," << spec.Position.z << ")";
 			spec.Name = ss.str();
@@ -395,13 +390,12 @@ namespace GemCraft {
 	GemGroup PlacementTool::PlaceGemsOnPositions(const std::vector<glm::vec3>& positions)
 	{
 		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
-		const GemSelectionUI& gemSelectionUI = m_Scene->m_GemSelectionUI;
 		const GemSettingSelectionUI& gemSettingSelectionUI = m_Scene->m_GemSettingSelectionUI;
 		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
 
 		GemSettingType settingType = gemSettingSelectionUI.GetCurSelectedGemSetting();
 		float exposureDepth = gemPatternUI.GetExposureDepth();
-		if (settingType == GemSettingType::Shovel || settingType == GemSettingType::Channel) exposureDepth = 0.0f;
+		//if (settingType == GemSettingType::Shovel || settingType == GemSettingType::Channel) exposureDepth = 0.0f;
 
 		float gemScale = gemPatternUI.GetGemScale();
 		float spacing = (GetParams(settingType).GemSpacing + 1.0f) * gemScale;
@@ -411,7 +405,7 @@ namespace GemCraft {
 
 		for (size_t i = 0; i < positions.size(); i++) {
 			GemSpecification spec;
-			spec.Filepath = gemSelectionUI.GetCurSelectedGem();
+			spec.SettingType = settingType;
 			spec.Position = positions[i];
 			spec.Normal = geodesic->CalculateNormal(spec.Position);
 

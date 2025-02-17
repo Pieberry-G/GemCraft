@@ -6,20 +6,6 @@
 
 namespace GemCraft {
 
-	class GemSelectionUI
-	{
-	public:
-		void Init();
-
-		void DrawUI();
-		std::function<void()> GetDrawUIFunction() { return std::bind(&GemSelectionUI::DrawUI, this); }
-
-		const std::string& GetCurSelectedGem() const { return m_CurSelectedGem; }
-
-	private:
-		std::string m_CurSelectedGem;
-	};
-
 	class GemSettingSelectionUI
 	{
 	public:
@@ -46,7 +32,7 @@ namespace GemCraft {
 
 	private:
 		float m_ExposureDepth = 0.3f;
-		float m_GemScale = 1.3f;
+		float m_GemScale = 2.0f;
 		float m_GridRotation = 0.0f;
 	};
 

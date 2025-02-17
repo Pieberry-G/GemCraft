@@ -3,13 +3,9 @@
 #include "Core/Scene.h"
 #include "Mesh/FormatTool.h"
 #include "TinyRenderer/RenderTool.h"
-
-#include <polyscope/polyscope.h>
-#include <filesystem>
-
 #include "Mesh/GeodesicTool.h"
 
-#include <CGAL/Polygon_mesh_processing/triangulate_hole.h>
+#include <polyscope/polyscope.h>
 
 namespace GemCraft {
 
@@ -36,8 +32,8 @@ namespace GemCraft {
         { -90.0f, 0.0f },
     };
 
-    size_t FindNearestRegion(Neighbor_query& neighborQuery, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace);
-    std::set<size_t> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing);
+    static size_t FindNearestRegion(Neighbor_query& neighborQuery, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace);
+    static std::set<size_t> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing);
 
     static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh,
         double maxHoleDiam, int maxNumHoleEdges)
@@ -61,107 +57,6 @@ namespace GemCraft {
 
     void RegionSelectionTool::AutoRecognizeGems()
     {
-        std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
-        std::shared_ptr<CGALMesh> cgalmesh = FormatTool::MeshToCGALMesh(ring, ring->GetPsTransform());
-
-        typedef CGALMesh::Property_map<face_descriptor, double> Facet_double_map;
-        Facet_double_map sdf_property_map;
-
-        sdf_property_map = cgalmesh->add_property_map<face_descriptor, double>("f:sdf").first;
-
-        // compute SDF values
-        // We can't use default parameters for number of rays, and cone angle
-        // and the postprocessing
-        CGAL::sdf_values(*cgalmesh, sdf_property_map, 2.0 / 3.0 * CGAL_PI, 25, true);
-
-        std::vector<double> sdfValues;
-        for (face_descriptor fd : faces(*cgalmesh)) {
-            //// ids are between [0, number_of_segments -1]
-            //std::cout << sdf_property_map[fd] << " ";
-            sdfValues.push_back(sdf_property_map[fd]);
-        }
-        ring->GetPsMesh()->addFaceScalarQuantity("sdfValues", sdfValues);
-
-
-
-        std::vector<bool> toDelete(ring->GetFaces().size(), false);
-        for (face_descriptor fd : faces(*cgalmesh)) {
-            if (sdf_property_map[fd] < 0.33) {
-                toDelete[fd] = true;
-                std::set<size_t> faces = FindNRingFaces(*cgalmesh, fd, 8);
-                for (size_t f : faces) {
-                    toDelete[f] = true;
-                }
-            }
-        }
-
-        std::vector<glm::vec3> vertices = ring->GetVertices();
-        std::vector<std::vector<size_t>> faces = ring->GetFaces();
-        std::vector<std::vector<size_t>> newFaces;
-
-        for (size_t i = 0; i < faces.size(); i++) {
-            if (!toDelete[i]) {
-                newFaces.push_back(faces[i]);
-            }
-        }
-        std::shared_ptr<Mesh> newMesh = std::make_shared<Mesh>("", vertices, newFaces);
-        glm::mat4 transform = newMesh->GetPsTransform();
-        glm::mat4 inverseTransform = glm::inverse(transform);
-        std::shared_ptr<CGALMesh> hollowedCGALMesh = FormatTool::MeshToCGALMesh(newMesh, transform);
-        //CGALpmp::remove_isolated_vertices(*cgalmesh);
-        hollowedCGALMesh->collect_garbage();
-        auto hollowedMesh = FormatTool::CGALMeshToMesh(hollowedCGALMesh, inverseTransform);
-        hollowedMesh->SetName("3-RemoveSelectedRegion");
-        hollowedMesh->AddToPolyscope();
-
-
-        glm::mat4 transform1 = hollowedMesh->GetPsTransform();
-        glm::mat4 inverseTransform1 = glm::inverse(transform);
-        std::shared_ptr<CGALMesh> patchedCGALMesh = FormatTool::MeshToCGALMesh(hollowedMesh, transform1);
-
-        // Both of these must be positive in order to be considered
-        double maxHoleDiam = -1.0;
-        int maxNumHoleEdges = -1;
-
-        unsigned int nb_holes = 0;
-        std::vector<halfedge_descriptor> borderCycles;
-
-        // collect one halfedge per boundary cycle
-        CGALpmp::extract_boundary_cycles(*patchedCGALMesh, std::back_inserter(borderCycles));
-
-        polyscope::state::selectedRegion.Reset();
-        std::vector<typename boost::graph_traits<CGALMesh>::halfedge_descriptor> border_halfedges;
-        for (halfedge_descriptor h : borderCycles)
-        {
-            if (maxHoleDiam > 0 && maxNumHoleEdges > 0 &&
-                !IsSmallHole(h, *patchedCGALMesh, maxHoleDiam, maxNumHoleEdges))
-                continue;
-
-            std::vector<face_descriptor>  patchFaces;
-            std::vector<vertex_descriptor> patchVertices;
-            bool success = std::get<0>(CGALpmp::triangulate_refine_and_fair_hole(*patchedCGALMesh,
-                h,
-                CGAL::parameters::face_output_iterator(std::back_inserter(patchFaces))
-                .vertex_output_iterator(std::back_inserter(patchVertices))));
-
-            //CGALpmp::triangulate_and_refine_hole(*patchedCGALMesh,
-            //    h,
-            //    CGAL::parameters::face_output_iterator(std::back_inserter(patchFaces))
-            //    .vertex_output_iterator(std::back_inserter(patchVertices)));
-
-            CGAL::Polygon_mesh_processing::border_halfedges(patchFaces, *patchedCGALMesh,
-                std::back_inserter(border_halfedges));
-
-            GC_CORE_TRACE("* Number of facets in constructed patch: {0}", patchFaces.size());
-            GC_CORE_TRACE("* Number of vertices in constructed patch: {0}", patchVertices.size());
-            //GC_CORE_TRACE("* Is fairing successful: {0}", success);
-            ++nb_holes;
-        }
-
-        auto patchedMesh = FormatTool::CGALMeshToMesh(patchedCGALMesh, inverseTransform1);
-        patchedMesh->SetName("4-FillHole");
-        patchedMesh->AddToPolyscope();
-
         RenderMultiviewImages();
         SegmentMultiviewImages();
         ApplyBackProjection();
@@ -184,7 +79,7 @@ namespace GemCraft {
         std::filesystem::remove_all(renderOutpath);
         std::filesystem::create_directories(renderOutpath);
 
-        const std::string filepath = m_Scene->GetRing()->GetFilepath();
+        const std::string filepath = m_Scene->GetRingPath();
         TinyRenderer::Model model(filepath);
         TinyRenderer::Camera camera(model.GetRadius() * 2.5f);
         for (size_t i = 0; i < s_CameraAngles.size(); i++) {
@@ -323,7 +218,7 @@ namespace GemCraft {
                 }
                 double shapeRatio = area / (perimeter * perimeter);
             
-                if (shapeRatio > 0.006) {
+                if (shapeRatio > 0.005) {
                     std::cout << area << " " << perimeter << std::endl;
                     selectedRegions.insert(i);
                     for (auto& face : regions[i].second) {
@@ -487,7 +382,7 @@ namespace GemCraft {
         GC_CORE_INFO("Completed!");
     }
 
-    size_t FindNearestRegion(Neighbor_query& neighborQuery, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace)
+    static size_t FindNearestRegion(Neighbor_query& neighborQuery, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace)
     {
         std::vector<typename Neighbor_query::Item> neighbors;
 
@@ -516,7 +411,7 @@ namespace GemCraft {
         return -1;
     }
 
-    std::set<size_t> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing)
+    static std::set<size_t> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing)
     {
         Neighbor_query neighborQuery(cgalmesh);
 

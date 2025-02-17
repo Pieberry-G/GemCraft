@@ -6,11 +6,6 @@
 #include <polyscope/polyscope.h>
 #include <filesystem>
 
-//#include <CGAL/Heat_method_3/Surface_mesh_geodesic_distances_3.h>
-//#include <CGAL/Polygon_mesh_processing/distance.h>
-//typedef CGALMesh::Property_map<vertex_descriptor, double> Vertex_distance_map;
-//typedef CGAL::Heat_method_3::Surface_mesh_geodesic_distances_3<CGALMesh> Heat_method;
-
 namespace GemCraft {
 
     static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh,
@@ -67,10 +62,10 @@ namespace GemCraft {
         std::shared_ptr<Mesh> newMesh = std::make_shared<Mesh>("", vertices, newFaces);
         glm::mat4 transform = newMesh->GetPsTransform();
         glm::mat4 inverseTransform = glm::inverse(transform);
-        std::shared_ptr<CGALMesh> cgalmesh = FormatTool::MeshToCGALMesh(newMesh, transform);
-        CGALpmp::remove_isolated_vertices(*cgalmesh);
-        cgalmesh->collect_garbage();
-        m_HollowedMesh = FormatTool::CGALMeshToMesh(cgalmesh, inverseTransform);
+        std::shared_ptr<CGALMesh> newcgalmesh = FormatTool::MeshToCGALMesh(newMesh, transform);
+        CGALpmp::remove_isolated_vertices(*newcgalmesh);
+        newcgalmesh->collect_garbage();
+        m_HollowedMesh = FormatTool::CGALMeshToMesh(newcgalmesh, inverseTransform);
         m_HollowedMesh->SetName("3-RemoveSelectedRegion");
 
         GC_CORE_INFO("Completed!");
@@ -132,48 +127,6 @@ namespace GemCraft {
         m_PatchedMesh->SetName("4-FillHole");
 
         GC_CORE_INFO("Completed!");
-
-
-        ////property map for the distance values to the source set
-        //Vertex_distance_map vertex_distance = cgalmesh->add_property_map<vertex_descriptor, double>("v:distance", 0).first;
-        //Heat_method hm(*cgalmesh);
-        //for (halfedge_descriptor hed : border_halfedges) {
-        //    vertex_descriptor source1 = source(hed, *cgalmesh);
-        //    hm.add_source(source1);
-        //}
-        //hm.estimate_geodesic_distances(vertex_distance);
-        //for (vertex_descriptor vd : vertices(*cgalmesh)) {
-        //    m_Distance.push_back(get(vertex_distance, vd));
-        //}
-    }
-
-    void GeometryTool::ShapeSmoothing()
-    {
-        glm::mat4 transform = m_PatchedMesh->GetPsTransform();
-        glm::mat4 inverseTransform = glm::inverse(transform);
-        std::shared_ptr<CGALMesh> cgalmesh = FormatTool::MeshToCGALMesh(m_PatchedMesh, transform);
-
-        GC_CORE_WARN("Implementing shape smoothing.");
-        std::set<CGALMesh::Vertex_index> constrainedVertices;
-        for (size_t faceID = 0; faceID < m_PatchedMesh->nFaces(); faceID++) {
-            if (polyscope::state::selectedRegion.Faces().find(faceID) == polyscope::state::selectedRegion.Faces().end()) {
-                for (size_t index : m_PatchedMesh->GetFaces()[faceID]) {
-                    constrainedVertices.insert(CGALMesh::Vertex_index(index));
-                }
-            }
-        }
-        std::cout << "Constraining: " << constrainedVertices.size() << " border vertices" << std::endl;
-        CGAL::Boolean_property_map<std::set<CGALMesh::Vertex_index> > vcmap(constrainedVertices);
-
-        CGALpmp::smooth_shape(*cgalmesh, 0.1, CGAL::parameters::number_of_iterations(10)
-            .vertex_is_constrained_map(vcmap));
-
-        //CGALpmp::smooth_shape(*cgalmesh, 0.001, CGAL::parameters::number_of_iterations(10));
-
-        m_SmoothedMesh = FormatTool::CGALMeshToMesh(cgalmesh, inverseTransform);
-        m_SmoothedMesh->SetName("5-ShapeSmoothing");
-
-        GC_CORE_INFO("Shape smoothing completed!");
     }
 
     void GeometryTool::ShowResult()

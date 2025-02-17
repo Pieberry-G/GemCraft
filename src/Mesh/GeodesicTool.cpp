@@ -42,8 +42,11 @@ namespace GemCraft {
 			.protect_constraints(true)); //i.e. protect border, here
 
 		CGAL::IO::write_polygon_mesh("remeshed.obj", *m_CGALmesh, CGAL::parameters::stream_precision(17));
-
 		std::shared_ptr<Mesh> remeshedMesh = std::make_shared<Mesh>("Remeshed Result", "remeshed.obj");
+
+		//m_CGALmesh->collect_garbage();
+		//std::shared_ptr<Mesh> remeshedMesh = FormatTool::CGALMeshToMesh(m_CGALmesh, glm::mat4(1.0f));
+		//remeshedMesh->SetName("Remeshed Result");
 
 		// Show remesh result.
 		m_Scene->AddMesh(remeshedMesh);

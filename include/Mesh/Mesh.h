@@ -11,8 +11,6 @@ namespace GemCraft {
         Mesh(const std::string& name, const std::string& filepath);
         Mesh(const std::string& name, const std::vector<glm::vec3>& vertices, const std::vector<std::vector<size_t>>& faces);
 
-        std::string GetFilepath() const { return m_Filepath; }
-
         size_t nVertices() const { return  m_Vertices.size(); }
         size_t nFaces() const { return  m_Faces.size(); }
         size_t nEdges() const { return  m_Faces.size() * 3; }
@@ -32,7 +30,6 @@ namespace GemCraft {
 
     private:
         std::string m_Name;
-        std::string m_Filepath;
 
         std::vector<glm::vec3> m_Vertices;
         std::vector<std::vector<size_t>> m_Faces;

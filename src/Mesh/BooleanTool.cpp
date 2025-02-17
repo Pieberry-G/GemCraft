@@ -58,7 +58,7 @@ namespace GemCraft {
 		// GemSettings
 		for (size_t i = 0; i < gemSettings.size(); i++) {
 			std::shared_ptr<CGALMesh> mesh3 = FormatTool::MeshToCGALMesh(gemSettings[i], gemSettings[i]->GetPsTransform());
-			//mesh3 = ConstructContexHull(mesh3);
+			mesh3 = ConstructContexHull(mesh3);
 
 			Exact_point_map mesh3ExactPoints = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
 			Exact_vertex_point_map mesh3Vpm(mesh3ExactPoints, *mesh3);
@@ -69,86 +69,86 @@ namespace GemCraft {
 												CGALparams::vertex_point_map(mesh2Vpm));
 		}
 
-		switch (settingType)
-		{
-			case GemSettingType::Shovel:
-			{
-				const std::unique_ptr<GeodesicTool>& geodesicTool = m_Scene->m_GeodesicTool;
-				float gemScale = gemLine.GetGemScale();
-				std::vector<CGALPoint> groovePoints = CalculateGroove(gemLine.GetPath(), 0.05f, 0.7f * gemScale, -0.35f, 0.6f * gemScale);
-
-				const size_t step = 5;
-				for (size_t i = 0; i < gemLine.GetPath().Length(); i += step) {
-					std::shared_ptr<CGALMesh> mesh3 = std::make_shared<CGALMesh>();
-					Exact_point_map mesh3_exact_points = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
-					Exact_vertex_point_map mesh3Vpm(mesh3_exact_points, *mesh3);
-					for (size_t j = 0; j < std::min(step, gemLine.GetPath().Length()); j++) {
-						std::shared_ptr<CGALMesh> mesh4 = std::make_shared<CGALMesh>();
-						CGAL::convex_hull_3(groovePoints.begin() + (i + j) * 4, groovePoints.begin() + (i + j + 2) * 4, *mesh4);
-						Exact_point_map mesh4ExactPoints = mesh4->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
-						Exact_vertex_point_map mesh4Vpm(mesh4ExactPoints, *mesh4);
-						CGALpmp::corefine_and_compute_union(*mesh3, *mesh4, *mesh3,
-															CGALparams::vertex_point_map(mesh3Vpm),
-															CGALparams::vertex_point_map(mesh4Vpm),
-															CGALparams::vertex_point_map(mesh3Vpm));
-					}
-					CGALpmp::corefine_and_compute_union(*mesh2, *mesh3, *mesh2,
-														CGALparams::vertex_point_map(mesh2Vpm),
-														CGALparams::vertex_point_map(mesh3Vpm),
-														CGALparams::vertex_point_map(mesh2Vpm));
-				}
-				break;
-			}	
-			case GemSettingType::Channel:
-			{
-				const std::unique_ptr<GeodesicTool>& geodesicTool = m_Scene->m_GeodesicTool;
-				float gemScale = gemLine.GetGemScale();
-
-				const size_t step = 5;
-				std::vector<CGALPoint> groovePoints = CalculateGroove(gemLine.GetPath(), 0.05f, 0.43f * gemScale, -0.25f, 0.43f * gemScale);
-				for (size_t i = 0; i < gemLine.GetPath().Length(); i += step) {
-					std::shared_ptr<CGALMesh> mesh3 = std::make_shared<CGALMesh>();
-					Exact_point_map mesh3ExactPoints = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
-					Exact_vertex_point_map mesh3Vpm(mesh3ExactPoints, *mesh3);
-					for (size_t j = 0; j < std::min(step, gemLine.GetPath().Length()); j++) {
-						std::shared_ptr<CGALMesh> mesh4 = std::make_shared<CGALMesh>();
-						CGAL::convex_hull_3(groovePoints.begin() + (i + j) * 4, groovePoints.begin() + (i + j + 2) * 4, *mesh4);
-						Exact_point_map mesh4ExactPoints = mesh4->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
-						Exact_vertex_point_map mesh4Vpm(mesh4ExactPoints, *mesh4);
-						CGALpmp::corefine_and_compute_union(*mesh3, *mesh4, *mesh3,
-															CGALparams::vertex_point_map(mesh3Vpm),
-															CGALparams::vertex_point_map(mesh4Vpm),
-															CGALparams::vertex_point_map(mesh3Vpm));
-					}
-					CGALpmp::corefine_and_compute_union(*mesh2, *mesh3, *mesh2,
-														CGALparams::vertex_point_map(mesh2Vpm),
-														CGALparams::vertex_point_map(mesh3Vpm),
-														CGALparams::vertex_point_map(mesh2Vpm));
-				}
-
-				//groovePoints = CalculateGroove(gemLine.GetPath(), -0.05f, 0.5f * gemScale, -0.3f, 0.5f * gemScale);
-				//for (size_t i = 0; i < gemLine.GetPath().Length(); i += step) {
-				//	std::shared_ptr<CGALMesh> mesh3 = std::make_shared<CGALMesh>();
-				//	Exact_point_map mesh3_exact_points = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
-				//	Exact_vertex_point_map mesh3_vpm(mesh3_exact_points, *mesh3);
-				//	for (size_t j = 0; j < std::min(step, gemLine.GetPath().Length()); j++) {
-				//		std::shared_ptr<CGALMesh> mesh4 = std::make_shared<CGALMesh>();
-				//		CGAL::convex_hull_3(groovePoints.begin() + (i + j) * 4, groovePoints.begin() + (i + j + 2) * 4, *mesh4);
-				//		Exact_point_map mesh4_exact_points = mesh4->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
-				//		Exact_vertex_point_map mesh4_vpm(mesh4_exact_points, *mesh4);
-				//		CGALpmp::corefine_and_compute_union(*mesh3, *mesh4, *mesh3,
-				//											CGALparams::vertex_point_map(mesh3_vpm),
-				//											CGALparams::vertex_point_map(mesh4_vpm),
-				//											CGALparams::vertex_point_map(mesh3_vpm));
-				//	}
-				//	CGALpmp::corefine_and_compute_union(*mesh2, *mesh3, *mesh2,
-				//										CGALparams::vertex_point_map(mesh2_vpm),
-				//										CGALparams::vertex_point_map(mesh3_vpm),
-				//										CGALparams::vertex_point_map(mesh2_vpm));
-				//}
-				break;
-			}
-		}
+		//switch (settingType)
+		//{
+		//	case GemSettingType::Shovel:
+		//	{
+		//		const std::unique_ptr<GeodesicTool>& geodesicTool = m_Scene->m_GeodesicTool;
+		//		float gemScale = gemLine.GetGemScale();
+		//		std::vector<CGALPoint> groovePoints = CalculateGroove(gemLine.GetPath(), 0.05f, 0.7f * gemScale, -0.35f, 0.6f * gemScale);
+		//
+		//		const size_t step = 5;
+		//		for (size_t i = 0; i < gemLine.GetPath().Length(); i += step) {
+		//			std::shared_ptr<CGALMesh> mesh3 = std::make_shared<CGALMesh>();
+		//			Exact_point_map mesh3_exact_points = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
+		//			Exact_vertex_point_map mesh3Vpm(mesh3_exact_points, *mesh3);
+		//			for (size_t j = 0; j < std::min(step, gemLine.GetPath().Length()); j++) {
+		//				std::shared_ptr<CGALMesh> mesh4 = std::make_shared<CGALMesh>();
+		//				CGAL::convex_hull_3(groovePoints.begin() + (i + j) * 4, groovePoints.begin() + (i + j + 2) * 4, *mesh4);
+		//				Exact_point_map mesh4ExactPoints = mesh4->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
+		//				Exact_vertex_point_map mesh4Vpm(mesh4ExactPoints, *mesh4);
+		//				CGALpmp::corefine_and_compute_union(*mesh3, *mesh4, *mesh3,
+		//													CGALparams::vertex_point_map(mesh3Vpm),
+		//													CGALparams::vertex_point_map(mesh4Vpm),
+		//													CGALparams::vertex_point_map(mesh3Vpm));
+		//			}
+		//			CGALpmp::corefine_and_compute_union(*mesh2, *mesh3, *mesh2,
+		//												CGALparams::vertex_point_map(mesh2Vpm),
+		//												CGALparams::vertex_point_map(mesh3Vpm),
+		//												CGALparams::vertex_point_map(mesh2Vpm));
+		//		}
+		//		break;
+		//	}	
+		//	case GemSettingType::Channel:
+		//	{
+		//		const std::unique_ptr<GeodesicTool>& geodesicTool = m_Scene->m_GeodesicTool;
+		//		float gemScale = gemLine.GetGemScale();
+		//
+		//		const size_t step = 5;
+		//		std::vector<CGALPoint> groovePoints = CalculateGroove(gemLine.GetPath(), 0.05f, 0.43f * gemScale, -0.25f, 0.43f * gemScale);
+		//		for (size_t i = 0; i < gemLine.GetPath().Length(); i += step) {
+		//			std::shared_ptr<CGALMesh> mesh3 = std::make_shared<CGALMesh>();
+		//			Exact_point_map mesh3ExactPoints = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
+		//			Exact_vertex_point_map mesh3Vpm(mesh3ExactPoints, *mesh3);
+		//			for (size_t j = 0; j < std::min(step, gemLine.GetPath().Length()); j++) {
+		//				std::shared_ptr<CGALMesh> mesh4 = std::make_shared<CGALMesh>();
+		//				CGAL::convex_hull_3(groovePoints.begin() + (i + j) * 4, groovePoints.begin() + (i + j + 2) * 4, *mesh4);
+		//				Exact_point_map mesh4ExactPoints = mesh4->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
+		//				Exact_vertex_point_map mesh4Vpm(mesh4ExactPoints, *mesh4);
+		//				CGALpmp::corefine_and_compute_union(*mesh3, *mesh4, *mesh3,
+		//													CGALparams::vertex_point_map(mesh3Vpm),
+		//													CGALparams::vertex_point_map(mesh4Vpm),
+		//													CGALparams::vertex_point_map(mesh3Vpm));
+		//			}
+		//			CGALpmp::corefine_and_compute_union(*mesh2, *mesh3, *mesh2,
+		//												CGALparams::vertex_point_map(mesh2Vpm),
+		//												CGALparams::vertex_point_map(mesh3Vpm),
+		//												CGALparams::vertex_point_map(mesh2Vpm));
+		//		}
+		//
+		//		//groovePoints = CalculateGroove(gemLine.GetPath(), -0.05f, 0.5f * gemScale, -0.3f, 0.5f * gemScale);
+		//		//for (size_t i = 0; i < gemLine.GetPath().Length(); i += step) {
+		//		//	std::shared_ptr<CGALMesh> mesh3 = std::make_shared<CGALMesh>();
+		//		//	Exact_point_map mesh3_exact_points = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
+		//		//	Exact_vertex_point_map mesh3_vpm(mesh3_exact_points, *mesh3);
+		//		//	for (size_t j = 0; j < std::min(step, gemLine.GetPath().Length()); j++) {
+		//		//		std::shared_ptr<CGALMesh> mesh4 = std::make_shared<CGALMesh>();
+		//		//		CGAL::convex_hull_3(groovePoints.begin() + (i + j) * 4, groovePoints.begin() + (i + j + 2) * 4, *mesh4);
+		//		//		Exact_point_map mesh4_exact_points = mesh4->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
+		//		//		Exact_vertex_point_map mesh4_vpm(mesh4_exact_points, *mesh4);
+		//		//		CGALpmp::corefine_and_compute_union(*mesh3, *mesh4, *mesh3,
+		//		//											CGALparams::vertex_point_map(mesh3_vpm),
+		//		//											CGALparams::vertex_point_map(mesh4_vpm),
+		//		//											CGALparams::vertex_point_map(mesh3_vpm));
+		//		//	}
+		//		//	CGALpmp::corefine_and_compute_union(*mesh2, *mesh3, *mesh2,
+		//		//										CGALparams::vertex_point_map(mesh2_vpm),
+		//		//										CGALparams::vertex_point_map(mesh3_vpm),
+		//		//										CGALparams::vertex_point_map(mesh2_vpm));
+		//		//}
+		//		break;
+		//	}
+		//}
 
 		bool valid_difference = CGALpmp::corefine_and_compute_difference(*mesh1, *mesh2, *mesh1,
 																		CGALparams::vertex_point_map(mesh1Vpm),
@@ -227,7 +227,7 @@ namespace GemCraft {
 		// GemSettings
 		for (size_t i = 0; i < gemSettings.size(); i++) {
 			std::shared_ptr<CGALMesh> mesh3 = FormatTool::MeshToCGALMesh(gemSettings[i], gemSettings[i]->GetPsTransform());
-			//mesh3 = ConstructContexHull(mesh3);
+			mesh3 = ConstructContexHull(mesh3);
 
 			Exact_point_map mesh3ExactPoints = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
 			Exact_vertex_point_map mesh3Vpm(mesh3ExactPoints, *mesh3);

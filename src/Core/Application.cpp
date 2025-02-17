@@ -23,7 +23,6 @@ namespace GemCraft {
         TinyRenderer::RenderTool::Init();
 
         m_ResourceManager = ResourceManager::Get();
-        m_ResourceManager->PreloadGems();
         m_ResourceManager->PreloadGemSettings();
         m_ResourceManager->PreloadMandrel();
         m_ResourceManager->PreloadCylinder();
@@ -38,11 +37,13 @@ namespace GemCraft {
 
 	void Application::Run()
     {
-        const std::string filepath = "../assets/meshes/Gen/gen001/gen001.obj";
+        //m_Scene->AddRing("Gem", "../assets/meshes/BlenderExport/BezelSettingDemo.obj");
+
+        const std::string filepath = "../assets/meshes/Gen/gen003/gen003.obj";
         GC_CORE_WARN("Loading ring file: {0}", filepath);
         m_Scene->AddRing("Ring", filepath);
-        //m_Scene->InitGeodesic();
 
+        //m_Scene->CleanSurface();
         if(1)
             m_Scene->AutoRecognizeGems();
         else

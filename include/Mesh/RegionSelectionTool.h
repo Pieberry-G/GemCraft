@@ -14,18 +14,11 @@
 #include <CGAL/Min_sphere_of_spheres_d.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 
-#include <CGAL/mesh_segmentation.h>
-#include <CGAL/Polygon_mesh_processing/IO/polygon_mesh_io.h>
-#include <CGAL/property_map.h>
-
 typedef CGAL::Exact_predicates_inexact_constructions_kernel		Kernel;
 typedef Kernel::Point_3											CGALPoint;
 typedef Kernel::Vector_3										CGALVector;
 typedef CGAL::Surface_mesh<CGALPoint>							CGALMesh;
 typedef Kernel::FT                                              FT;
-
-typedef boost::graph_traits<CGALMesh>::vertex_descriptor        vertex_descriptor;
-typedef boost::graph_traits<CGALMesh>::face_descriptor          face_descriptor;
 
 typedef CGAL::Simple_cartesian<double>							K;
 typedef CGAL::Min_sphere_of_points_d_traits_3<K, double>		TraitsMS;
