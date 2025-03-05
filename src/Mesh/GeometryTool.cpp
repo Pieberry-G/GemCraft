@@ -8,24 +8,17 @@
 
 namespace GemCraft {
 
-    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh,
-        double maxHoleDiam, int maxNumHoleEdges)
-    {
-        int numHoleEdges = 0;
-        CGAL::Bbox_3 holeBBox;
-        for (halfedge_descriptor hc : CGAL::halfedges_around_face(h, cgalmesh))
-        {
-            const CGALPoint& p = cgalmesh.point(target(hc, cgalmesh));
-            holeBBox += p.bbox();
-            ++numHoleEdges;
+    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh, double maxHoleDiam, int maxNumHoleEdges);
+    static std::set<CGAL::SM_Face_index> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing);
+    static std::set<vertex_descriptor> FindBoundaryVertices(CGALMesh& cgalmesh, MeshSubset& subset);
+    static std::set<halfedge_descriptor> FindBoundaryEdges(CGALMesh& cgalmesh, MeshSubset& subset);
+    static std::set<face_descriptor> FindBoundaryFaces(CGALMesh& cgalmesh, MeshSubset& subset);
 
-            // Exit early, to avoid unnecessary traversal of large holes
-            if (numHoleEdges > maxNumHoleEdges) return false;
-            if (holeBBox.xmax() - holeBBox.xmin() > maxHoleDiam) return false;
-            if (holeBBox.ymax() - holeBBox.ymin() > maxHoleDiam) return false;
-            if (holeBBox.zmax() - holeBBox.zmin() > maxHoleDiam) return false;
-        }
-        return true;
+    void GeometryTool::Clean()
+    {
+        m_HollowedMesh = nullptr;
+        m_PatchedMesh = nullptr;
+        m_Distance.clear();
     }
 
     void GeometryTool::RepairGeometry()
@@ -66,7 +59,7 @@ namespace GemCraft {
         CGALpmp::remove_isolated_vertices(*newcgalmesh);
         newcgalmesh->collect_garbage();
         m_HollowedMesh = FormatTool::CGALMeshToMesh(newcgalmesh, inverseTransform);
-        m_HollowedMesh->SetName("3-RemoveSelectedRegion");
+        m_HollowedMesh->SetName("RemoveSelectedRegion");
 
         GC_CORE_INFO("Completed!");
     }
@@ -83,16 +76,14 @@ namespace GemCraft {
         double maxHoleDiam = -1.0;
         int maxNumHoleEdges = -1;
         
-        unsigned int nb_holes = 0;
+        unsigned int nbHoles = 0;
         std::vector<halfedge_descriptor> borderCycles;
         
         // collect one halfedge per boundary cycle
         CGALpmp::extract_boundary_cycles(*cgalmesh, std::back_inserter(borderCycles));
         
         polyscope::state::selectedRegion.Reset();
-        std::vector<typename boost::graph_traits<CGALMesh>::halfedge_descriptor> border_halfedges;
-        for (halfedge_descriptor h : borderCycles)
-        {
+        for (halfedge_descriptor h : borderCycles) {
             if (maxHoleDiam > 0 && maxNumHoleEdges > 0 &&
                 !IsSmallHole(h, *cgalmesh, maxHoleDiam, maxNumHoleEdges))
                 continue;
@@ -102,48 +93,59 @@ namespace GemCraft {
             bool success = std::get<0>(CGALpmp::triangulate_refine_and_fair_hole(*cgalmesh,
                 h,
                 CGAL::parameters::face_output_iterator(std::back_inserter(patchFaces))
-                .vertex_output_iterator(std::back_inserter(patchVertices))));
-
-            //CGALpmp::triangulate_and_refine_hole(*cgalmesh,
-            //    h,
-            //    CGAL::parameters::face_output_iterator(std::back_inserter(patchFaces))
-            //    .vertex_output_iterator(std::back_inserter(patchVertices)));
-
-            CGAL::Polygon_mesh_processing::border_halfedges(patchFaces, *cgalmesh,
-                std::back_inserter(border_halfedges));
-        
-            GC_CORE_TRACE("* Number of facets in constructed patch: {0}", patchFaces.size());
-            GC_CORE_TRACE("* Number of vertices in constructed patch: {0}", patchVertices.size());
-            //GC_CORE_TRACE("* Is fairing successful: {0}", success);
-            ++nb_holes;
-
+                .vertex_output_iterator(std::back_inserter(patchVertices))
+                .fairing_continuity(0)));
             for (auto& face : patchFaces) {
                 polyscope::state::selectedRegion.AddFace(face);
             }
+            ++nbHoles;
+
+            std::set<CGALMesh::Vertex_index> targetVertices;
+            std::set<CGALMesh::Vertex_index> constrainedVertices;
+            for (CGALMesh::Face_index f : patchFaces) {
+                std::set<CGAL::SM_Face_index> faces = FindNRingFaces(*cgalmesh, f, 10);
+                for (CGAL::SM_Face_index index : faces) {
+                    CGAL::Vertex_around_face_iterator<CGALMesh> vbegin, vend;
+                    for (boost::tie(vbegin, vend) = cgalmesh->vertices_around_face(cgalmesh->halfedge(index)); vbegin != vend; ++vbegin) {
+                        targetVertices.insert(*vbegin);
+                    }
+                }
+            }
+            for (auto v : cgalmesh->vertices()) {
+                if (targetVertices.find(v) == targetVertices.end()) {
+                    constrainedVertices.insert(v);
+                }
+            }
+
+            CGAL::Boolean_property_map<std::set<CGALMesh::Vertex_index>> vcmap(constrainedVertices);
+            CGALpmp::smooth_shape(*cgalmesh, 0.001, CGAL::parameters::number_of_iterations(10)
+                .vertex_is_constrained_map(vcmap));
         }
-        GC_CORE_TRACE("* {0} holes have been filled.", nb_holes);
+        GC_CORE_TRACE("{0} holes have been filled.", nbHoles);
+
+        CGALpmp::smooth_shape(*cgalmesh, 0.0002, CGAL::parameters::number_of_iterations(10));
 
         m_PatchedMesh = FormatTool::CGALMeshToMesh(cgalmesh, inverseTransform);
-        m_PatchedMesh->SetName("4-FillHole");
+        m_PatchedMesh->SetName("FillHole");
 
         GC_CORE_INFO("Completed!");
     }
 
     void GeometryTool::ShowResult()
     {
-        // 3-RemoveSelectedRegion
+        // Remove selected region
         {
             m_Scene->AddMesh(m_HollowedMesh);
             m_HollowedMesh->GetPsMesh()->setEnabled(false);
         }
 
-        // 4-FillHole
+        // Fill hole
         {
             m_Scene->AddMesh(m_PatchedMesh);
             m_PatchedMesh->GetPsMesh()->setEnabled(false);
         }
 
-        // 2-SelectRegion
+        // Selected region
         {
             std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
             std::vector<glm::vec3> faceColors(ring->GetFaces().size());
@@ -157,59 +159,93 @@ namespace GemCraft {
             polyscope::SurfaceFaceColorQuantity* showFaces = ring->GetPsMesh()->addFaceColorQuantity("Selected Region", faceColors);
             showFaces->setEnabled(true);
         }
+    }
 
-        //// Geodesic Distance
-        //{
-        //    auto maxIter = std::max_element(m_Distance.begin(), m_Distance.end());
-        //    float maxValue = *maxIter;
-        //    std::cout << maxValue << std::endl;
-        //
-        //    std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
-        //    std::vector<glm::vec3> vertexColors(ring->GetVertices().size());
-        //    for (size_t i = 0; i < ring->GetVertices().size(); i++) {
-        //        float value = m_Distance[i] / maxValue;
-        //        vertexColors[i] = { value, value, value };
-        //    }
-        //    polyscope::SurfaceVertexColorQuantity* showFaces = ring->GetPsMesh()->addVertexColorQuantity("Geodesic Distance", vertexColors);
-        //    showFaces->setEnabled(true);
-        //}
+    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh, double maxHoleDiam, int maxNumHoleEdges)
+    {
+        int numHoleEdges = 0;
+        CGAL::Bbox_3 holeBBox;
+        for (halfedge_descriptor hc : CGAL::halfedges_around_face(h, cgalmesh)) {
+            const CGALPoint& p = cgalmesh.point(target(hc, cgalmesh));
+            holeBBox += p.bbox();
+            ++numHoleEdges;
 
-        //// Isolines
-        //{
-        //    std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
-        //    std::vector<glm::vec3> positions;
-        //    std::vector<std::array<size_t, 2>> edgeInds;
-        //    double distBetweenLines = 2.0; // enforce spacing
-        //    for (auto& face : ring->GetFaces()) {
-        //        std::vector<glm::vec3> pos;
-        //        for (size_t i = 0; i < face.size(); i++) {
-        //            double vs = m_Distance[face[i]];
-        //            double vd = m_Distance[face[(i + 1) % face.size()]];
-        //            int region1 = floor(vs / distBetweenLines);
-        //            int region2 = floor(vd / distBetweenLines);
-        //            if (region1 != region2) {
-        //                double val = region2 * distBetweenLines;
-        //                if (region1 > region2) {
-        //                    val = region1 * distBetweenLines;
-        //                }
-        //                float t = (val - vs) / (vd - vs);
-        //                glm::vec3 ps = ring->GetVertices()[face[i]];
-        //                glm::vec3 pd = ring->GetVertices()[face[(i + 1) % face.size()]];
-        //                glm::vec3 p = ps + t * (pd - ps);
-        //                pos.push_back(p);
-        //            }
-        //        }
-        //        if (pos.size() == 2) {
-        //            positions.push_back(pos[0]);
-        //            positions.push_back(pos[1]);
-        //            edgeInds.push_back({ positions.size() - 2, positions.size() - 1 });
-        //        }
-        //    }
-        //    polyscope::SurfaceGraphQuantity* isolines = ring->GetPsMesh()->addSurfaceGraphQuantity("Isolines", positions, edgeInds);
-        //    isolines->setEnabled(true);
-        //    isolines->setRadius(0.002f);
-        //    isolines->setColor({ 0.0, 0.0, 0.0 });
-        //}
+            // Exit early, to avoid unnecessary traversal of large holes
+            if (numHoleEdges > maxNumHoleEdges) return false;
+            if (holeBBox.xmax() - holeBBox.xmin() > maxHoleDiam) return false;
+            if (holeBBox.ymax() - holeBBox.ymin() > maxHoleDiam) return false;
+            if (holeBBox.zmax() - holeBBox.zmin() > maxHoleDiam) return false;
+        }
+        return true;
+    }
+
+    static std::set<CGAL::SM_Face_index> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing)
+    {
+        Neighbor_query neighborQuery(cgalmesh);
+        std::set<CGAL::SM_Face_index> result;
+        std::vector<typename Neighbor_query::Item> neighbors;
+        std::queue<std::pair<CGAL::SM_Face_index, size_t>> faceQueue;
+        std::unordered_set<CGAL::SM_Face_index> visited;
+        faceQueue.push({ queryFace, 0 });
+        visited.insert(queryFace);
+
+        while (!faceQueue.empty()) {
+            auto [currentFace, distance] = faceQueue.front();
+            result.insert(currentFace);
+            if (distance < nRing) {
+                neighborQuery(currentFace, neighbors);
+                for (const auto& neighbor : neighbors) {
+                    if (visited.find(neighbor) == visited.end()) {
+                        visited.insert(neighbor);
+                        faceQueue.push({ neighbor, distance + 1 });
+                    }
+                }
+            }
+            faceQueue.pop();
+        }
+        return result;
+    }
+
+    static std::set<vertex_descriptor> FindBoundaryVertices(CGALMesh& cgalmesh, MeshSubset& subset) {
+        std::set<vertex_descriptor> boundaryVertices;
+        for (auto face : subset.Faces()) {
+            for (auto he : halfedges_around_face(cgalmesh.halfedge(face_descriptor(face)), cgalmesh)) {
+                auto oppositeFace = cgalmesh.face(cgalmesh.opposite(he));
+                if (subset.Faces().find(oppositeFace) == subset.Faces().end()) {
+                    boundaryVertices.insert(cgalmesh.target(he));
+                    break;
+                }
+            }
+        }
+        return boundaryVertices;
+    }
+
+    static std::set<halfedge_descriptor> FindBoundaryEdges(CGALMesh& cgalmesh, MeshSubset& subset) {
+        std::set<halfedge_descriptor> boundaryEdges;
+        for (auto face : subset.Faces()) {
+            for (auto he : halfedges_around_face(cgalmesh.halfedge(face_descriptor(face)), cgalmesh)) {
+                auto oppositeFace = cgalmesh.face(cgalmesh.opposite(he));
+                if (subset.Faces().find(oppositeFace) == subset.Faces().end()) {
+                    boundaryEdges.insert(he);
+                    break;
+                }
+            }
+        }
+        return boundaryEdges;
+    }
+
+    static std::set<face_descriptor> FindBoundaryFaces(CGALMesh& cgalmesh, MeshSubset& subset) {
+        std::set<face_descriptor> boundaryFaces;
+        for (auto face : subset.Faces()) {
+            for (auto he : halfedges_around_face(cgalmesh.halfedge(face_descriptor(face)), cgalmesh)) {
+                auto oppositeFace = cgalmesh.face(cgalmesh.opposite(he));
+                if (subset.Faces().find(oppositeFace) == subset.Faces().end()) {
+                    boundaryFaces.insert(face_descriptor(face));
+                    break;
+                }
+            }
+        }
+        return boundaryFaces;
     }
 
 } // namespace GemCraft

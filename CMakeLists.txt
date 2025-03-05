@@ -14,6 +14,7 @@ add_executable(GemCraft "${SRCS}" "${HEADERS}")
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT GemCraft)
 target_precompile_headers(GemCraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/pch.h)
 
+target_compile_definitions(GemCraft PRIVATE GC_PLATFORM_WINDOWS)
 target_compile_definitions(GemCraft PRIVATE "$<$<CONFIG:DEBUG>:GC_DEBUG>")
 target_compile_definitions(GemCraft PRIVATE "$<$<CONFIG:RELEASE>:GC_NDEBUG>")
 

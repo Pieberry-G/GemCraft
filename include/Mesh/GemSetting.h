@@ -61,4 +61,25 @@ namespace GemCraft {
         return SettingParams();
     }
 
+    enum class PackingMode
+    {
+        Hexagonal,
+        Square,
+    };
+
+    inline std::string GetName(PackingMode packingMode)
+    {
+        static const std::unordered_map<PackingMode, std::string> enumToString = {
+            { PackingMode::Hexagonal, "Hexagonal Mode"      },
+            { PackingMode::Square,    "Square Mode"     },
+        };
+
+        auto it = enumToString.find(packingMode);
+        if (it != enumToString.end()) {
+            return it->second;
+        }
+        GC_CORE_ASSERT(false, "Unknown gem setting type.");
+        return "Unknown";
+    }
+
 } // namespace GemCraft

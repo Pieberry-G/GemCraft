@@ -5,7 +5,7 @@ int main()
 	GemCraft::Log::Init();
 	GC_CORE_WARN("Log system initialized!");
 
-	auto app = GemCraft::CreateApplication();
+	GemCraft::Application* app = new GemCraft::Application();
 	app->Run();
 	delete app;
 }

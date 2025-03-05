@@ -14,28 +14,58 @@ namespace GemCraft {
 	{
 		m_GemSettingSelectionUI.Init();
 		polyscope::state::userCallbacks.push_back(m_GemSettingSelectionUI.GetDrawUIFunction());
-
 		polyscope::state::userCallbacks.push_back(m_GemPatternUI.GetDrawUIFunction());
+
+		m_SurfaceCleanerTool = std::make_unique<SurfaceCleanerTool>(this);
+		m_RegionSelectionTool = std::make_unique<RegionSelectionTool>(this);
+		m_GeometryTool = std::make_unique<GeometryTool>(this);
+		m_PlacementTool = std::make_unique<PlacementTool>(this);
+		m_BooleanTool = std::make_unique<BooleanTool>();
 	}
 
-	void Scene::OnKeyReleased(KeyCode key)
+	void Scene::Clean()
+	{
+		polyscope::removeAllStructures();
+		polyscope::state::selectedRegion.Reset();
+		m_RingPath = "";
+		m_Ring = nullptr;
+		m_Meshes.clear();
+		m_GemLines.clear();
+		m_GemGroups.clear();
+
+		m_SurfaceCleanerTool->Clean();
+		m_RegionSelectionTool->Clean();
+		m_GeometryTool->Clean();
+		m_PlacementTool->Clean();
+	}
+
+	bool Scene::OnKeyReleased(KeyReleasedEvent& e)
 	{
 		static const std::unordered_map<KeyCode, std::function<void()>> functionMap = {
-			{ Key::C, GC_BIND_EVENT_FN(Scene::ConstructGeodesicPath)     },
-			{ Key::V, GC_BIND_EVENT_FN(Scene::PlaceGemsOnPath)		     },
-			{ Key::Q, GC_BIND_EVENT_FN(Scene::RepairSelectedRegion)      },
-			{ Key::W, GC_BIND_EVENT_FN(Scene::PlaceGemsOnSelectedRegion) },
-			{ Key::P, GC_BIND_EVENT_FN(Scene::PlaceGemsAtTargets)		 },
-			{ Key::E, GC_BIND_EVENT_FN(Scene::BooleanOpDifference)		 },
+			{ Key::Q, GC_BIND_EVENT_FN(Scene::AutoSelectRegion)		     },
+			{ Key::W, GC_BIND_EVENT_FN(Scene::RepairSelectedRegion)      },
+			{ Key::E, GC_BIND_EVENT_FN(Scene::DigHoleOnSelectedRegion)	 },
+			{ Key::R, GC_BIND_EVENT_FN(Scene::PlaceGemsOnSelectedRegion) },
+			{ Key::T, GC_BIND_EVENT_FN(Scene::BooleanOpDifference)		 },
+
+			{ Key::Y, GC_BIND_EVENT_FN(Scene::CleanSurface)				 },
+			{ Key::U, GC_BIND_EVENT_FN(Scene::AutoRecognizeGems)		 },
+			{ Key::I, GC_BIND_EVENT_FN(Scene::PlaceGemsAtTargets)		 },
+			{ Key::O, GC_BIND_EVENT_FN(Scene::BooleanOpDifference)		 },
 		};
 
+		KeyCode key = e.GetKeyCode();
 		auto it = functionMap.find(key);
 		if (it != functionMap.end()) {
 			it->second();
+			return true;
+		}
+		else {
+			return false;
 		}
 	}
 
-	void Scene::OnRender(const std::string& command)
+	bool Scene::OnRender(AppRenderEvent& e)
 	{
 		static const std::unordered_map<std::string, std::function<void()>> functionMap = {
 			{ "ShowRingStroke",		GC_BIND_EVENT_FN(Scene::ShowRingStroke)		},
@@ -44,11 +74,14 @@ namespace GemCraft {
 			{ "ShowTargetPoint",	GC_BIND_EVENT_FN(Scene::ShowTargetPoint)	},
 		};
 
+		std::string command = e.GetCommand();
 		auto it = functionMap.find(command);
 		if (it != functionMap.end()) {
 			it->second();
+			return true;
 		} else {
 			GC_CORE_ERROR("Could nou find the relevant function!");
+			return false;
 		}
 	}
 
@@ -60,7 +93,6 @@ namespace GemCraft {
 	void Scene::AddRing(const std::string& name, const std::string& filepath)
 	{
 		GC_CORE_ASSERT(!m_Ring, "Ring already exists!");
-
 		m_Ring = std::make_shared<Mesh>(name, filepath);
 		m_Ring->AddToPolyscope();
 		m_Ring->GetPsMesh()->setMaterial("clay");
@@ -77,66 +109,50 @@ namespace GemCraft {
 		m_Meshes.back()->GetPsMesh()->setSurfaceColor(glm::vec3(0.750, 0.750, 0.750));
 	}
 
-	void Scene::CleanSurface()
-	{
-		SurfaceCleanerTool surfaceCleanerTool(this);
-		surfaceCleanerTool.CleanSurface();
-		surfaceCleanerTool.ShowResult();
-	}
-
-	void Scene::AutoRecognizeGems()
-	{
-		RegionSelectionTool regionSelectionTool(this);
-		regionSelectionTool.AutoRecognizeGems();
-		regionSelectionTool.ShowResult();
-	}
-
 	void Scene::AutoSelectRegion()
 	{
-		RegionSelectionTool regionSelectionTool(this);
-		regionSelectionTool.AutoSelectRegion();
-		regionSelectionTool.ShowResult();
+		m_RegionSelectionTool->AutoSelectRegion();
+		m_RegionSelectionTool->ShowResult();
 	}
 
 	void Scene::RepairSelectedRegion()
 	{
-		GeometryTool geometryTool(this);
-		geometryTool.RepairGeometry();
-		geometryTool.ShowResult();
+		m_GeometryTool->RepairGeometry();
+		m_GeometryTool->ShowResult();
+
+		m_PlacementTool->BuildSubmeshForSelectedRegion();
+		m_PlacementTool->ParameterizeSubmesh();
+		m_PlacementTool->CalculateGeodesicDistance();
 	}
 
-	void Scene::ConstructGeodesicPath()
+	void Scene::DigHoleOnSelectedRegion()
 	{
-		m_GeodesicPath = m_GeodesicTool->ConstructGeodesicPath();
+		m_PlacementTool->CreateBooleanMeshForSink();
+		m_PlacementTool->ShowResult();
 
-		// Visualization
-		std::vector<std::array<size_t, 2>> edgeInds;
-		for (size_t j = 1; j < m_GeodesicPath.Length(); j++) {
-			edgeInds.push_back({ j - 1, j });
+		glm::mat4 transform = m_Ring->GetPsTransform();
+		m_Ring->RemoveFromPolyscope();
+		m_Ring = m_BooleanTool->DifferenceOperation(m_Ring, m_PlacementTool->GetBooleanMesh());
+		m_Ring->SetName("Ring");
+		m_Ring->AddToPolyscope(transform);
+	}
+
+	void Scene::BooleanOpDifference()
+	{
+		glm::mat4 transform = m_Ring->GetPsTransform();
+		m_Ring->RemoveFromPolyscope();
+		for (auto& gemLine : m_GemLines) {
+			m_Ring = m_BooleanTool->DifferenceOperation(m_Ring, gemLine);
 		}
-		polyscope::SurfaceGraphQuantity* test = m_Ring->GetPsMesh()->addSurfaceGraphQuantity("GeodesicPath", m_GeodesicPath.Points(), edgeInds);
-		test->setEnabled(true);
-		test->setRadius(0.002f);
-		test->setColor({ 0.0, 0.0, 0.0 });
-	}
-
-	void Scene::PlaceGemsOnPath()
-	{
-		PlacementTool placerTool(this);
-		GemLine gemLine = placerTool.PlaceGemsOnPath(m_GeodesicPath);
-		m_GemLines.push_back(gemLine);
-	}
-
-	void Scene::PlaceGemsAtTargets()
-	{
-		PlacementTool placerTool(this);
-		GemGroup gemGroup = placerTool.PlaceGemsAtTargets();
-		m_GemGroups.push_back(gemGroup);
+		for (auto& gemGroup : m_GemGroups) {
+			m_Ring = m_BooleanTool->DifferenceOperation(m_Ring, gemGroup);
+		}
+		m_Ring->SetName("Ring");
+		m_Ring->AddToPolyscope(transform);
 	}
 
 	void Scene::PlaceGemsOnSelectedRegion()
 	{
-		PlacementTool placerTool(this);
 		if (!m_GemGroups.empty()) {
 			for (auto& gemGroup : m_GemGroups) {
 				const std::vector<std::shared_ptr<Mesh>>& gems = gemGroup.GetGems();
@@ -150,23 +166,26 @@ namespace GemCraft {
 			}
 		}
 		m_GemGroups.clear();
-		GemGroup gemGroup = placerTool.PlaceGemsOnSelectedRegion();
+		GemGroup gemGroup = m_PlacementTool->PlaceGemsOnSelectedRegion();
 		m_GemGroups.push_back(gemGroup);
 	}
 
-	void Scene::BooleanOpDifference()
+	void Scene::CleanSurface()
 	{
-		glm::mat4 transform = m_Ring->GetPsTransform();
-		m_Ring->RemoveFromPolyscope();
-		BooleanTool booleanTool(this);
-		for (auto& gemLine : m_GemLines) {
-			m_Ring = booleanTool.DifferenceOperation(m_Ring, gemLine);
-		}
-		for (auto& gemGroup : m_GemGroups) {
-			m_Ring = booleanTool.DifferenceOperation(m_Ring, gemGroup);
-		}
-		m_Ring->SetName("Ring");
-		m_Ring->AddToPolyscope(transform);
+		m_SurfaceCleanerTool->CleanSurface();
+		m_SurfaceCleanerTool->ShowResult();
+	}
+
+	void Scene::AutoRecognizeGems()
+	{
+		m_RegionSelectionTool->AutoRecognizeGems();
+		m_RegionSelectionTool->ShowResult();
+	}
+
+	void Scene::PlaceGemsAtTargets()
+	{
+		GemGroup gemGroup = m_PlacementTool->PlaceGemsAtTargets();
+		m_GemGroups.push_back(gemGroup);
 	}
 
 	void Scene::ShowRingStroke()

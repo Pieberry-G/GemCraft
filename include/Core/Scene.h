@@ -1,27 +1,34 @@
 #pragma once
 
 #include "Mesh/Mesh.h"
-#include "Mesh/GeodesicTool.h"
 #include "Mesh/GemSetting.h"
 #include "Mesh/GemGroup.h"
 #include "Panels/CustomUI.h"
 
 namespace GemCraft {
 
+	class GeodesicTool;
+	class SurfaceCleanerTool;
+	class RegionSelectionTool;
+	class GeometryTool;
+	class PlacementTool;
+	class BooleanTool;
+
 	class Scene
 	{
 		friend class PlacementTool;
-		friend class BooleanTool;
 	public:
 		Scene();
 
-		void OnKeyReleased(KeyCode key);
-		void OnRender(const std::string& command);
+		void Clean();
+		bool OnKeyReleased(KeyReleasedEvent& e);
+		bool OnRender(AppRenderEvent& e);
 		void InitGeodesic();
 
 		void AddRing(const std::string& name, const std::string& filepath);
-		std::shared_ptr<Mesh>& GetRing() { return m_Ring; }
 		std::string GetRingPath() { return m_RingPath; }
+		std::shared_ptr<Mesh>& GetRing() { return m_Ring; }
+		std::vector<GemGroup>& GetGemGroups() { return m_GemGroups; };
 
 		void AddMesh(std::shared_ptr<Mesh>& mesh);
 		std::shared_ptr<Mesh>& GetMesh(const std::string& name)
@@ -33,17 +40,17 @@ namespace GemCraft {
 			}
 		}
 
-		void CleanSurface();
-		void AutoRecognizeGems();
-		void AutoSelectRegion();
-		void RepairSelectedRegion();
-		void PlaceGemsAtTargets();
 
 	private:
-		void ConstructGeodesicPath();
-		void PlaceGemsOnPath();
+		void AutoSelectRegion();
+		void RepairSelectedRegion();
+		void DigHoleOnSelectedRegion();
 		void PlaceGemsOnSelectedRegion();
 		void BooleanOpDifference();
+
+		void CleanSurface();
+		void AutoRecognizeGems();
+		void PlaceGemsAtTargets();
 
 		void ShowRingStroke();
 		void ShowSelectedRegion();
@@ -63,6 +70,12 @@ namespace GemCraft {
 
 		GemSettingSelectionUI m_GemSettingSelectionUI;
 		GemPatternUI m_GemPatternUI;
+
+		std::unique_ptr<SurfaceCleanerTool> m_SurfaceCleanerTool;
+		std::unique_ptr<RegionSelectionTool> m_RegionSelectionTool;
+		std::unique_ptr<GeometryTool> m_GeometryTool;
+		std::unique_ptr<PlacementTool> m_PlacementTool;
+		std::unique_ptr<BooleanTool> m_BooleanTool;
 	};
 
 } // namespace GemCraft

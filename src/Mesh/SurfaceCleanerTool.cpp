@@ -29,6 +29,13 @@ namespace GemCraft {
 
     static std::set<size_t> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing);
 
+    void SurfaceCleanerTool::Clean()
+    {
+        m_OriginalMesh = nullptr;
+        m_HollowedMesh = nullptr;
+        m_PatchedMesh = nullptr;
+    }
+
     void SurfaceCleanerTool::CleanSurface()
     {
         RemoveProngs();
@@ -56,8 +63,6 @@ namespace GemCraft {
         // We can't use default parameters for number of rays, and cone angle
         // and the postprocessing
         CGAL::sdf_values(*cgalmesh, sdfPropertyMap, 2.0 / 3.0 * CGAL_PI, 25, true);
-
-        std::cout << "sdf" << std::endl;
 
         std::vector<double> sdfValues;
         for (face_descriptor fd : faces(*cgalmesh)) {
@@ -94,8 +99,6 @@ namespace GemCraft {
         newcgalmesh->collect_garbage();
         m_HollowedMesh = FormatTool::CGALMeshToMesh(newcgalmesh, inverseTransform);
         m_HollowedMesh->SetName("3-RemoveSelectedRegion");
-
-        std::cout << "remove" << std::endl;
     }
 
     void SurfaceCleanerTool::FillHoles()

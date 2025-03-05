@@ -41,6 +41,8 @@ namespace GemCraft {
 		RegionSelectionTool(Scene* scene)
 			: m_Scene(scene) {}
 
+		void Clean();
+
 		void AutoRecognizeGems();
 		void AutoSelectRegion();
 		void ShowResult();

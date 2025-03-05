@@ -16,6 +16,7 @@ typedef CGAL::Surface_mesh<CGALPoint>							CGALMesh;
 
 typedef boost::graph_traits<CGALMesh>::vertex_descriptor        vertex_descriptor;
 typedef boost::graph_traits<CGALMesh>::face_descriptor          face_descriptor;
+typedef boost::graph_traits<CGALMesh>::halfedge_descriptor		halfedge_descriptor;
 
 using Neighbor_query = CGAL::Shape_detection::Polygon_mesh::One_ring_neighbor_query<CGALMesh>;
 
@@ -29,6 +30,8 @@ namespace GemCraft {
 	public:
 		SurfaceCleanerTool(Scene* scene)
 			: m_Scene(scene) {}
+
+		void Clean();
 
 		void CleanSurface();
 		void ShowResult();

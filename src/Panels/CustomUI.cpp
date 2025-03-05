@@ -45,8 +45,9 @@ namespace GemCraft {
         float cellSize = thumbnailSize + padding;
         float panelWidth = ImGui::GetContentRegionAvail().x;
         int columnCount = (int)(panelWidth / cellSize);
-        if (columnCount < 1)
+        if (columnCount < 1) {
             columnCount = 1;
+        }
         ImGui::Columns(columnCount, 0, false);
 
         for (auto& pair : resources) {
@@ -79,12 +80,45 @@ namespace GemCraft {
         ImGui::PushID("Gem Pattern UI");
         ImGui::Begin("Gem Pattern UI", nullptr);
 
-        ImGui::InputFloat("Exposure Depth", &m_ExposureDepth, 0.1f, 0.0f, "%.2f");
+        ImGui::Checkbox("Enable Hole Shrink", &m_EnableHoleShrink);
+        if (m_EnableHoleShrink) {
+            if (ImGui::InputFloat("Hole Shrink Length", &m_HoleShrinkLength, 0.1f, 0.0f, "%.2f")) {
+                if (m_HoleShrinkLength < 0.2f) {
+                    m_HoleShrinkLength = 0.2f;
+                }
+            }
+        }
+        if (ImGui::InputFloat("Hole Depth", &m_HoleDepth, 0.1f, 0.0f, "%.2f")) {
+            if (m_HoleDepth < 0.1f) {
+                m_HoleDepth = 0.1f;
+            }
+        }
+        ImGui::Separator();
+
+        std::vector<PackingMode> modes{ PackingMode::Hexagonal, PackingMode::Square };
+        std::string name = GetName(m_CurSelectedPackingMode);
+        if (ImGui::BeginCombo("Packing Mode", name.c_str())) {
+            ImGui::SetItemDefaultFocus();
+            for (auto& mode : modes) {
+                bool is_selected = (m_CurSelectedPackingMode == mode);
+                if (ImGui::Selectable(GetName(mode).c_str(), is_selected)) {
+                    m_CurSelectedPackingMode = mode;
+                }
+                if (is_selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            polyscope::requestRedraw();
+            ImGui::EndCombo();
+        }
+        ImGui::Separator();
+
         if (ImGui::InputFloat("Gem Scale", &m_GemScale, 0.1f, 0.0f, "%.2f")) {
             if (m_GemScale < 0.8f) {
                 m_GemScale = 0.8f;
             }
         }
+        ImGui::InputFloat("Gem Exposure Depth", &m_GemExposureDepth, 0.1f, 0.0f, "%.2f");
         ImGui::InputFloat("Grid Rotation (angle)", &m_GridRotation, 15.0f, 0.0f, "%.2f");
     }
 

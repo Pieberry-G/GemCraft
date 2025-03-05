@@ -5,18 +5,23 @@
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
+#include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_hole.h>
 #include <CGAL/Polygon_mesh_processing/repair.h>
 #include <CGAL/Polygon_mesh_processing/smooth_shape.h>
+#include <CGAL/Shape_detection/Region_growing/Polygon_mesh.h>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel		Kernel;
 typedef Kernel::Point_3											CGALPoint;
+typedef Kernel::Vector_3										CGALVector;
 typedef CGAL::Surface_mesh<CGALPoint>							CGALMesh;
 
 typedef boost::graph_traits<CGALMesh>::vertex_descriptor        vertex_descriptor;
 typedef boost::graph_traits<CGALMesh>::face_descriptor          face_descriptor;
 typedef boost::graph_traits<CGALMesh>::edge_descriptor			edge_descriptor;
 typedef boost::graph_traits<CGALMesh>::halfedge_descriptor		halfedge_descriptor;
+
+using Neighbor_query = CGAL::Shape_detection::Polygon_mesh::One_ring_neighbor_query<CGALMesh>;
 
 namespace CGALpmp = CGAL::Polygon_mesh_processing;
 
@@ -28,6 +33,8 @@ namespace GemCraft {
 	public:
 		GeometryTool(Scene* scene)
 			: m_Scene(scene) {}
+
+		void Clean();
 
 		void RepairGeometry();
 		void ShowResult();

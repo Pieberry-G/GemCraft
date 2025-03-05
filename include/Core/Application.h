@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Panels/MainMenu.h"
 #include "Core/ResourceManager.h"
 #include "Core/Scene.h"
 
@@ -22,23 +23,18 @@ namespace GemCraft {
 		bool OnKeyReleased(KeyReleasedEvent& e);
 		bool OnAppRender(AppRenderEvent& e);
 
-		std::shared_ptr<Scene> GetScene() { return m_Scene; }
+		std::shared_ptr<Scene>& GetScene() { return m_Scene; }
 
 		static Application* Get() { return s_Instance; }
 
 	private:
-		bool m_Running = true;
-
+		MainMenu m_MainMenu;
 		ResourceManager* m_ResourceManager;
+
 		std::shared_ptr<Scene> m_Scene;
 
 	private:
 		static Application* s_Instance;
 	};
-
-	Application* CreateApplication()
-	{
-		return new Application();
-	}
 
 } // namespace GemCraft

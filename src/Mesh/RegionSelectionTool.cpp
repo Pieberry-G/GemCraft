@@ -6,6 +6,10 @@
 #include "Mesh/GeodesicTool.h"
 
 #include <polyscope/polyscope.h>
+#include <filesystem>
+
+#include <CGAL/Polygon_mesh_processing/extrude.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 
 namespace GemCraft {
 
@@ -33,26 +37,12 @@ namespace GemCraft {
     };
 
     static size_t FindNearestRegion(Neighbor_query& neighborQuery, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace);
-    static std::set<size_t> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing);
+    static std::set<CGAL::SM_Face_index> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing);
+    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh, double maxHoleDiam, int maxNumHoleEdges);
 
-    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh,
-        double maxHoleDiam, int maxNumHoleEdges)
+    void RegionSelectionTool::Clean()
     {
-        int numHoleEdges = 0;
-        CGAL::Bbox_3 holeBBox;
-        for (halfedge_descriptor hc : CGAL::halfedges_around_face(h, cgalmesh))
-        {
-            const CGALPoint& p = cgalmesh.point(target(hc, cgalmesh));
-            holeBBox += p.bbox();
-            ++numHoleEdges;
-
-            // Exit early, to avoid unnecessary traversal of large holes
-            if (numHoleEdges > maxNumHoleEdges) return false;
-            if (holeBBox.xmax() - holeBBox.xmin() > maxHoleDiam) return false;
-            if (holeBBox.ymax() - holeBBox.ymin() > maxHoleDiam) return false;
-            if (holeBBox.zmax() - holeBBox.zmin() > maxHoleDiam) return false;
-        }
-        return true;
+        m_BackProjectionFaces.Reset();
     }
 
     void RegionSelectionTool::AutoRecognizeGems()
@@ -344,7 +334,7 @@ namespace GemCraft {
             for (auto& i : selectedRegions) {
                 for (auto& face : regions[i].second) {
                     auto item = CGAL::SM_Face_index(face);
-                    std::set<size_t> result = FindNRingFaces(*cgalmesh, item, 5);
+                    std::set<CGAL::SM_Face_index> result = FindNRingFaces(*cgalmesh, item, 5);
                     for (auto& j : result) {
                         tintedFaces.AddFace(j);
                     }
@@ -385,7 +375,6 @@ namespace GemCraft {
     static size_t FindNearestRegion(Neighbor_query& neighborQuery, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace)
     {
         std::vector<typename Neighbor_query::Item> neighbors;
-
         std::queue<CGAL::SM_Face_index> queue;
         std::unordered_set<CGAL::SM_Face_index> visited;
         queue.push(queryFace);
@@ -393,57 +382,66 @@ namespace GemCraft {
 
         while (!queue.empty()) {
             CGAL::SM_Face_index currentFace = queue.front();
-            queue.pop();
-
             neighborQuery(currentFace, neighbors);
             for (const auto& neighbor : neighbors) {
-                if (visited.find(neighbor) == visited.end()) {
+                if (visited.count(neighbor) == 0) {
                     visited.insert(neighbor);
                     queue.push(neighbor);
-
                     size_t regionIndex = get(map, neighbor);
                     if (regionIndex != size_t(-1)) {
                         return regionIndex;
                     }
                 }
             }
+            queue.pop();
         }
         return -1;
     }
 
-    static std::set<size_t> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing)
+    static std::set<CGAL::SM_Face_index> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing)
     {
         Neighbor_query neighborQuery(cgalmesh);
-
-        std::set<size_t> result;
+        std::set<CGAL::SM_Face_index> result;
         std::vector<typename Neighbor_query::Item> neighbors;
-
-        std::queue<CGAL::SM_Face_index> faceQueue;
-        std::queue<size_t> disQueue;
+        std::queue<std::pair<CGAL::SM_Face_index, size_t>> faceQueue;
         std::unordered_set<CGAL::SM_Face_index> visited;
-        faceQueue.push(queryFace);
-        disQueue.push(0);
+        faceQueue.push({ queryFace, 0 });
         visited.insert(queryFace);
 
         while (!faceQueue.empty()) {
-            CGAL::SM_Face_index currentFace = faceQueue.front();
-            faceQueue.pop();
-            size_t distance = disQueue.front();
-            disQueue.pop();
+            auto [currentFace, distance] = faceQueue.front();
             result.insert(currentFace);
-
             if (distance < nRing) {
                 neighborQuery(currentFace, neighbors);
                 for (const auto& neighbor : neighbors) {
                     if (visited.find(neighbor) == visited.end()) {
                         visited.insert(neighbor);
-                        faceQueue.push(neighbor);
-                        disQueue.push(distance + 1);
+                        faceQueue.push({ neighbor, distance + 1 });
                     }
                 }
             }
+            faceQueue.pop();
         }
         return result;
+    }
+
+    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh, double maxHoleDiam, int maxNumHoleEdges)
+    {
+        int numHoleEdges = 0;
+        CGAL::Bbox_3 holeBBox;
+        for (halfedge_descriptor hc : CGAL::halfedges_around_face(h, cgalmesh))
+        {
+            const CGALPoint& p = cgalmesh.point(target(hc, cgalmesh));
+            holeBBox += p.bbox();
+            ++numHoleEdges;
+
+            // Exit early, to avoid unnecessary traversal of large holes
+            if (numHoleEdges > maxNumHoleEdges) return false;
+            if (holeBBox.xmax() - holeBBox.xmin() > maxHoleDiam) return false;
+            if (holeBBox.ymax() - holeBBox.ymin() > maxHoleDiam) return false;
+            if (holeBBox.zmax() - holeBBox.zmin() > maxHoleDiam) return false;
+        }
+        return true;
     }
 
     void RegionSelectionTool::ShowResult()

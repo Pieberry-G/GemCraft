@@ -69,22 +69,15 @@ namespace GemCraft {
 		}
 	};
 
-	class Scene;
 	class BooleanTool
 	{
 	public:
-		BooleanTool(Scene* scene)
-			: m_Scene(scene) {}
-
+		std::shared_ptr<Mesh> DifferenceOperation(std::shared_ptr<Mesh>& ring, std::shared_ptr<Mesh>& meshToSubtract);
 		std::shared_ptr<Mesh> DifferenceOperation(std::shared_ptr<Mesh>& ring, GemLine& gemLine);
 		std::shared_ptr<Mesh> DifferenceOperation(std::shared_ptr<Mesh>& ring, GemGroup& gemGroup);
 
 	private:
 		std::shared_ptr<CGALMesh> ConstructContexHull(std::shared_ptr<CGALMesh> mesh);
-		std::vector<CGALPoint> CalculateGroove(const Path& path, float distanceUP, float topWidth, float distanceDown, float bottomWidth);
-
-	private:
-		Scene* m_Scene;
 	};
 
 } // namespace GemCraft
