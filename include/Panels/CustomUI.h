@@ -24,6 +24,7 @@ namespace GemCraft {
 		void DrawUI();
 		std::function<void()> GetDrawUIFunction() { return std::bind(&GemPatternUI::DrawUI, this); }
 
+		int GetFairingContinuity() const { return m_FairingContinuity; }
 		bool GetEnableHoleShrink() const { return m_EnableHoleShrink; }
 		float GetHoleShrinkLength() const { return m_HoleShrinkLength; }
 		float GetHoleDepth() const { return m_HoleDepth; }
@@ -31,15 +32,18 @@ namespace GemCraft {
 		float GetGemScale() const { return m_GemScale; }
 		float GetGemExposureDepth() const { return m_GemExposureDepth; }
 		float GetGridRotation() const { return m_GridRotation; }
+		float GetSphereToolRadius() const { return m_SphereToolRadius; }
 
 	private:
+		int m_FairingContinuity = 0;
 		bool m_EnableHoleShrink = true;
 		float m_HoleShrinkLength = 0.5f;
 		float m_HoleDepth = 0.5f;
-		PackingMode m_CurSelectedPackingMode = PackingMode::Hexagonal;
+		PackingMode m_CurSelectedPackingMode = PackingMode::Square;
 		float m_GemScale = 1.5f;
 		float m_GemExposureDepth = 0.0f;
 		float m_GridRotation = 0.0f;
+		float m_SphereToolRadius = 0.5f;
 	};
 
 } // namespace GemCraft

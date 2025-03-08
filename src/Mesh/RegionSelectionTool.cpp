@@ -8,9 +8,6 @@
 #include <polyscope/polyscope.h>
 #include <filesystem>
 
-#include <CGAL/Polygon_mesh_processing/extrude.h>
-#include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
-
 namespace GemCraft {
 
     struct HalfedgeToEdge
@@ -36,9 +33,8 @@ namespace GemCraft {
         { -90.0f, 0.0f },
     };
 
-    static size_t FindNearestRegion(Neighbor_query& neighborQuery, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace);
-    static std::set<CGAL::SM_Face_index> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing);
-    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh, double maxHoleDiam, int maxNumHoleEdges);
+    static size_t FindNearestRegion(std::shared_ptr<CGALMesh>& cgalmesh, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace);
+    static std::set<CGAL::SM_Face_index> FindNRingFaces(std::shared_ptr<CGALMesh>& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing);
 
     void RegionSelectionTool::Clean()
     {
@@ -59,6 +55,55 @@ namespace GemCraft {
         SegmentMultiviewImages();
         ApplyBackProjection();
         SelectRegion();
+    }
+
+    void RegionSelectionTool::InteractiveSphereSelect()
+    {
+        const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
+        std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
+        const std::vector<glm::vec3>& vertices = ring->GetVertices();
+        const std::vector<std::vector<size_t>>& faces = ring->GetFaces();
+        size_t interactiveFace = polyscope::state::interactiveFace;
+        glm::vec3 iFCenter = (vertices[faces[interactiveFace][0]] + vertices[faces[interactiveFace][1]] + vertices[faces[interactiveFace][2]]) / 3.0f;
+        for (size_t i = 0; i < faces.size(); i++) {
+            glm::vec3 center = (vertices[faces[i][0]] + vertices[faces[i][1]] + vertices[faces[i][2]]) / 3.0f;
+            if (glm::length(center - iFCenter) < gemPatternUI.GetSphereToolRadius()) {
+                polyscope::state::selectedRegion.AddFace(i);
+            }
+        }
+        ShowResult();
+    }
+
+    void RegionSelectionTool::InteractiveFillRegion()
+    {
+        std::set<size_t> boundaryFaces = polyscope::state::selectedRegion.Faces();
+        CGAL::SM_Face_index queryFace = CGAL::SM_Face_index(polyscope::state::interactiveFace);
+        if (boundaryFaces.find(queryFace) != boundaryFaces.end()) return;
+
+        std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
+        std::shared_ptr<CGALMesh> cgalmesh = FormatTool::MeshToCGALMesh(ring, ring->GetPsTransform());
+        Neighbor_query neighborQuery(*cgalmesh);
+        std::set<CGAL::SM_Face_index> result;
+        std::vector<typename Neighbor_query::Item> neighbors;
+        std::queue<CGAL::SM_Face_index> faceQueue;
+        std::unordered_set<CGAL::SM_Face_index> visited;
+        faceQueue.push(queryFace);
+        visited.insert(queryFace);
+        polyscope::state::selectedRegion.AddFace(queryFace);
+
+        while (!faceQueue.empty()) {
+            auto currentFace = faceQueue.front();
+            result.insert(currentFace);
+            neighborQuery(currentFace, neighbors);
+            for (const auto& neighbor : neighbors) {
+                if (visited.find(neighbor) == visited.end() && boundaryFaces.find(neighbor) == boundaryFaces.end()) {
+                    visited.insert(neighbor);
+                    faceQueue.push(neighbor);
+                    polyscope::state::selectedRegion.AddFace(neighbor);
+                }
+            }
+            faceQueue.pop();
+        }
     }
 
     void RegionSelectionTool::RenderMultiviewImages()
@@ -158,7 +203,7 @@ namespace GemCraft {
         std::vector<typename Region_growing::Item> unassigned;
         regionGrowing.unassigned_items(faces(*cgalmesh), std::back_inserter(unassigned));
         for (auto& unassignedFace : unassigned) {
-            size_t nearestRegionIndex = FindNearestRegion(neighborQuery, map, unassignedFace);
+            size_t nearestRegionIndex = FindNearestRegion(cgalmesh, map, unassignedFace);
             if (nearestRegionIndex != -1) {
                 put(map, unassignedFace, nearestRegionIndex);
                 regions[nearestRegionIndex].second.push_back(unassignedFace);
@@ -292,7 +337,7 @@ namespace GemCraft {
         std::vector<typename Region_growing::Item> unassigned;
         regionGrowing.unassigned_items(faces(*cgalmesh), std::back_inserter(unassigned));
         for (auto& unassignedFace : unassigned) {
-            size_t nearestRegionIndex = FindNearestRegion(neighborQuery, map, unassignedFace);
+            size_t nearestRegionIndex = FindNearestRegion(cgalmesh, map, unassignedFace);
             if (nearestRegionIndex != -1) {
                 put(map, unassignedFace, nearestRegionIndex);
                 regions[nearestRegionIndex].second.push_back(unassignedFace);
@@ -334,7 +379,7 @@ namespace GemCraft {
             for (auto& i : selectedRegions) {
                 for (auto& face : regions[i].second) {
                     auto item = CGAL::SM_Face_index(face);
-                    std::set<CGAL::SM_Face_index> result = FindNRingFaces(*cgalmesh, item, 5);
+                    std::set<CGAL::SM_Face_index> result = FindNRingFaces(cgalmesh, item, 5);
                     for (auto& j : result) {
                         tintedFaces.AddFace(j);
                     }
@@ -372,8 +417,9 @@ namespace GemCraft {
         GC_CORE_INFO("Completed!");
     }
 
-    static size_t FindNearestRegion(Neighbor_query& neighborQuery, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace)
+    static size_t FindNearestRegion(std::shared_ptr<CGALMesh>& cgalmesh, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace)
     {
+        Neighbor_query neighborQuery(*cgalmesh);
         std::vector<typename Neighbor_query::Item> neighbors;
         std::queue<CGAL::SM_Face_index> queue;
         std::unordered_set<CGAL::SM_Face_index> visited;
@@ -398,9 +444,9 @@ namespace GemCraft {
         return -1;
     }
 
-    static std::set<CGAL::SM_Face_index> FindNRingFaces(CGALMesh& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing)
+    static std::set<CGAL::SM_Face_index> FindNRingFaces(std::shared_ptr<CGALMesh>& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing)
     {
-        Neighbor_query neighborQuery(cgalmesh);
+        Neighbor_query neighborQuery(*cgalmesh);
         std::set<CGAL::SM_Face_index> result;
         std::vector<typename Neighbor_query::Item> neighbors;
         std::queue<std::pair<CGAL::SM_Face_index, size_t>> faceQueue;
@@ -423,25 +469,6 @@ namespace GemCraft {
             faceQueue.pop();
         }
         return result;
-    }
-
-    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh, double maxHoleDiam, int maxNumHoleEdges)
-    {
-        int numHoleEdges = 0;
-        CGAL::Bbox_3 holeBBox;
-        for (halfedge_descriptor hc : CGAL::halfedges_around_face(h, cgalmesh))
-        {
-            const CGALPoint& p = cgalmesh.point(target(hc, cgalmesh));
-            holeBBox += p.bbox();
-            ++numHoleEdges;
-
-            // Exit early, to avoid unnecessary traversal of large holes
-            if (numHoleEdges > maxNumHoleEdges) return false;
-            if (holeBBox.xmax() - holeBBox.xmin() > maxHoleDiam) return false;
-            if (holeBBox.ymax() - holeBBox.ymin() > maxHoleDiam) return false;
-            if (holeBBox.zmax() - holeBBox.zmin() > maxHoleDiam) return false;
-        }
-        return true;
     }
 
     void RegionSelectionTool::ShowResult()

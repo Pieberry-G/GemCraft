@@ -68,10 +68,12 @@ namespace GemCraft {
 	bool Scene::OnRender(AppRenderEvent& e)
 	{
 		static const std::unordered_map<std::string, std::function<void()>> functionMap = {
-			{ "ShowRingStroke",		GC_BIND_EVENT_FN(Scene::ShowRingStroke)		},
-			{ "ShowSelectedRegion", GC_BIND_EVENT_FN(Scene::ShowSelectedRegion)	},
-			{ "ShowSourcePoint",	GC_BIND_EVENT_FN(Scene::ShowSourcePoint)	},
-			{ "ShowTargetPoint",	GC_BIND_EVENT_FN(Scene::ShowTargetPoint)	},
+			{ "ShowRingStroke",		     GC_BIND_EVENT_FN(Scene::ShowRingStroke)		  },
+			{ "ShowSelectedRegion",      GC_BIND_EVENT_FN(Scene::ShowSelectedRegion)	  },
+			{ "InteractiveSphereSelect", GC_BIND_EVENT_FN(Scene::InteractiveSphereSelect) },
+			{ "InteractiveFillRegion",   GC_BIND_EVENT_FN(Scene::InteractiveFillRegion)   },
+			{ "ShowSourcePoint",	     GC_BIND_EVENT_FN(Scene::ShowSourcePoint)	      },
+			{ "ShowTargetPoint",	     GC_BIND_EVENT_FN(Scene::ShowTargetPoint)	      },
 		};
 
 		std::string command = e.GetCommand();
@@ -80,7 +82,7 @@ namespace GemCraft {
 			it->second();
 			return true;
 		} else {
-			GC_CORE_ERROR("Could nou find the relevant function!");
+			GC_CORE_ERROR("Could not find the relevant function!");
 			return false;
 		}
 	}
@@ -120,6 +122,7 @@ namespace GemCraft {
 		m_GeometryTool->RepairGeometry();
 		m_GeometryTool->ShowResult();
 
+		InitGeodesic();
 		m_PlacementTool->BuildSubmeshForSelectedRegion();
 		m_PlacementTool->ParameterizeSubmesh();
 		m_PlacementTool->CalculateGeodesicDistance();
@@ -186,6 +189,18 @@ namespace GemCraft {
 	{
 		GemGroup gemGroup = m_PlacementTool->PlaceGemsAtTargets();
 		m_GemGroups.push_back(gemGroup);
+	}
+
+	void Scene::InteractiveSphereSelect()
+	{
+		m_RegionSelectionTool->InteractiveSphereSelect();
+		m_RegionSelectionTool->ShowResult();
+	}
+
+	void Scene::InteractiveFillRegion()
+	{
+		m_RegionSelectionTool->InteractiveFillRegion();
+		m_RegionSelectionTool->ShowResult();
 	}
 
 	void Scene::ShowRingStroke()

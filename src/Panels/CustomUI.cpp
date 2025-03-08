@@ -80,6 +80,16 @@ namespace GemCraft {
         ImGui::PushID("Gem Pattern UI");
         ImGui::Begin("Gem Pattern UI", nullptr);
 
+        if (ImGui::InputInt("Fairing Continuity", &m_FairingContinuity, 1)) {
+            if (m_FairingContinuity < 0) {
+                m_FairingContinuity = 0;
+            }
+            if (m_FairingContinuity > 1) {
+                m_FairingContinuity = 1;
+            }
+        }
+        ImGui::Separator();
+
         ImGui::Checkbox("Enable Hole Shrink", &m_EnableHoleShrink);
         if (m_EnableHoleShrink) {
             if (ImGui::InputFloat("Hole Shrink Length", &m_HoleShrinkLength, 0.1f, 0.0f, "%.2f")) {
@@ -120,6 +130,11 @@ namespace GemCraft {
         }
         ImGui::InputFloat("Gem Exposure Depth", &m_GemExposureDepth, 0.1f, 0.0f, "%.2f");
         ImGui::InputFloat("Grid Rotation (angle)", &m_GridRotation, 15.0f, 0.0f, "%.2f");
+        if (ImGui::InputFloat("Sphere Tool Radius", &m_SphereToolRadius, 0.1f, 0.0f, "%.2f")) {
+            if (m_SphereToolRadius < 0.0f) {
+                m_SphereToolRadius = 0.0f;
+            }
+        }
     }
 
 } // namespace GemCraft

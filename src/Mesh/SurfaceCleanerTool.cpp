@@ -7,14 +7,14 @@
 
 namespace GemCraft {
 
-    static bool IsSmallHole(halfedge_descriptor h, CGALMesh& cgalmesh,
+    static bool IsSmallHole(halfedge_descriptor h, std::shared_ptr<CGALMesh>& cgalmesh,
         double maxHoleDiam, int maxNumHoleEdges)
     {
         int numHoleEdges = 0;
         CGAL::Bbox_3 holeBBox;
-        for (halfedge_descriptor hc : CGAL::halfedges_around_face(h, cgalmesh))
+        for (halfedge_descriptor hc : CGAL::halfedges_around_face(h, *cgalmesh))
         {
-            const CGALPoint& p = cgalmesh.point(target(hc, cgalmesh));
+            const CGALPoint& p = cgalmesh->point(target(hc, *cgalmesh));
             holeBBox += p.bbox();
             ++numHoleEdges;
 
@@ -122,7 +122,7 @@ namespace GemCraft {
         for (halfedge_descriptor h : borderCycles)
         {
             if (maxHoleDiam > 0 && maxNumHoleEdges > 0 &&
-                !IsSmallHole(h, *cgalmesh, maxHoleDiam, maxNumHoleEdges))
+                !IsSmallHole(h, cgalmesh, maxHoleDiam, maxNumHoleEdges))
                 continue;
 
             std::vector<face_descriptor>  patchFaces;

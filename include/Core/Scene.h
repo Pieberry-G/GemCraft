@@ -16,6 +16,8 @@ namespace GemCraft {
 
 	class Scene
 	{
+		friend class RegionSelectionTool;
+		friend class GeometryTool;
 		friend class PlacementTool;
 	public:
 		Scene();
@@ -51,6 +53,9 @@ namespace GemCraft {
 		void CleanSurface();
 		void AutoRecognizeGems();
 		void PlaceGemsAtTargets();
+
+		void InteractiveSphereSelect();
+		void InteractiveFillRegion();
 
 		void ShowRingStroke();
 		void ShowSelectedRegion();

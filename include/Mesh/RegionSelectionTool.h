@@ -45,6 +45,8 @@ namespace GemCraft {
 
 		void AutoRecognizeGems();
 		void AutoSelectRegion();
+		void InteractiveFillRegion();
+		void InteractiveSphereSelect();
 		void ShowResult();
 
 	private:
