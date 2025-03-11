@@ -105,7 +105,15 @@ namespace GemCraft {
         }
         ImGui::Separator();
 
-        std::vector<PackingMode> modes{ PackingMode::Hexagonal, PackingMode::Square };
+        if (ImGui::InputFloat("Gem Scale", &m_GemScale, 0.1f, 0.0f, "%.2f")) {
+            if (m_GemScale < 0.8f) {
+                m_GemScale = 0.8f;
+            }
+        }
+        ImGui::InputFloat("Gem Exposure Length", &m_GemExposureLength, 0.1f, 0.0f, "%.2f");
+        ImGui::Separator();
+
+        std::vector<PackingMode> modes{ PackingMode::Hexagonal, PackingMode::Square, PackingMode::Compact };
         std::string name = GetName(m_CurSelectedPackingMode);
         if (ImGui::BeginCombo("Packing Mode", name.c_str())) {
             ImGui::SetItemDefaultFocus();
@@ -121,15 +129,13 @@ namespace GemCraft {
             polyscope::requestRedraw();
             ImGui::EndCombo();
         }
+        if (m_CurSelectedPackingMode == PackingMode::Compact) {
+            ImGui::InputFloat("Edge Loop Density", &m_PackingEdgeLoopDensity, 0.01f, 0.0f, "%.2f");
+            ImGui::InputFloat("Center Density", &m_PackingCenterDensity, 0.01f, 0.0f, "%.2f");
+        }
+        ImGui::InputFloat("Grid Rotation (angle)", &m_GridRotation, 15.0f, 0.0f, "%.2f");
         ImGui::Separator();
 
-        if (ImGui::InputFloat("Gem Scale", &m_GemScale, 0.1f, 0.0f, "%.2f")) {
-            if (m_GemScale < 0.8f) {
-                m_GemScale = 0.8f;
-            }
-        }
-        ImGui::InputFloat("Gem Exposure Depth", &m_GemExposureDepth, 0.1f, 0.0f, "%.2f");
-        ImGui::InputFloat("Grid Rotation (angle)", &m_GridRotation, 15.0f, 0.0f, "%.2f");
         if (ImGui::InputFloat("Sphere Tool Radius", &m_SphereToolRadius, 0.1f, 0.0f, "%.2f")) {
             if (m_SphereToolRadius < 0.0f) {
                 m_SphereToolRadius = 0.0f;

@@ -253,7 +253,7 @@ namespace GemCraft {
                 }
                 double shapeRatio = area / (perimeter * perimeter);
             
-                if (shapeRatio > 0.005) {
+                if (shapeRatio > 0.006) {
                     std::cout << area << " " << perimeter << std::endl;
                     selectedRegions.insert(i);
                     for (auto& face : regions[i].second) {

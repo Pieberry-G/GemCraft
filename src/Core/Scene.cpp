@@ -1,5 +1,4 @@
 #include "Core/Scene.h"
-#include "Core/ResourceManager.h"
 
 #include "Mesh/GeodesicTool.h"
 #include "Mesh/SurfaceCleanerTool.h"
@@ -126,12 +125,13 @@ namespace GemCraft {
 		m_PlacementTool->BuildSubmeshForSelectedRegion();
 		m_PlacementTool->ParameterizeSubmesh();
 		m_PlacementTool->CalculateGeodesicDistance();
+		m_PlacementTool->ShowResult();
 	}
 
 	void Scene::DigHoleOnSelectedRegion()
 	{
-		m_PlacementTool->CreateBooleanMeshForSink();
-		m_PlacementTool->ShowResult();
+		m_PlacementTool->CreateMeshForBooleanHole();
+		m_PlacementTool->ShowBooleanMesh();
 
 		glm::mat4 transform = m_Ring->GetPsTransform();
 		m_Ring->RemoveFromPolyscope();

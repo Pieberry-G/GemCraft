@@ -4,7 +4,6 @@
 #include "Mesh/FormatTool.h"
 
 #include <polyscope/polyscope.h>
-#include <filesystem>
 
 namespace GemCraft {
 

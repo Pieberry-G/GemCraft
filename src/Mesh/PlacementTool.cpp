@@ -5,28 +5,24 @@
 
 #include "Mesh/FormatTool.h"
 #include "Mesh/GeodesicTool.h"
+#include "Mesh/Packing2D.h"
 
 namespace GemCraft {
 
-	static std::pair<CGALPoint2, float> CalculateBoundingCircle(std::vector<CGALPoint2>& points);
-	static std::vector<CGALPoint2> GenerateSquarePacking(CGALPoint2 center, int gridStep, float cellRadius, float gridRotation);
-	static std::vector<CGALPoint2> GenerateHexagonalPacking(CGALPoint2 center, int gridStep, float cellRadius, float gridRotation);
-	static std::vector<CGALPoint2> ClipToUVBoundary(const std::vector<CGALPoint2>& points, const std::vector<CGALPoint2>& boundary, float radius);
 	static double ComputeSignedArea(const std::vector<CGALPoint2>& polygon);
 
 	void PlacementTool::Clean()
 	{
 		m_Submesh = nullptr;
 		m_BooleanMesh = nullptr;
-		m_CGALSubmesh = nullptr;
-		m_SubmeshBoundary.clear();
-		m_SubmeshUVMap.reset();
-		m_SubmeshUVBoundary.clear();
-		m_GeodesicDistance.clear();
+		m_UVCoords.clear();
+		m_GeodesicDistances.clear();
 	}
 
 	void PlacementTool::BuildSubmeshForSelectedRegion()
 	{
+		GC_CORE_WARN("Building submesh.");
+
 		std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
 		std::vector<glm::vec3> originVertices = ring->GetVertices();
 		std::vector<std::vector<size_t>> originFaces = ring->GetFaces();
@@ -35,53 +31,213 @@ namespace GemCraft {
 			newFaces.push_back(originFaces[index]);
 		}
 		std::shared_ptr<Mesh> newMesh = std::make_shared<Mesh>("", originVertices, newFaces);
-		m_CGALSubmesh = FormatTool::MeshToCGALMesh(newMesh, newMesh->GetPsTransform());
-		CGALpmp::remove_isolated_vertices(*m_CGALSubmesh);
-		m_CGALSubmesh->collect_garbage();
+		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(newMesh, newMesh->GetPsTransform());
+		CGALpmp::remove_isolated_vertices(*cgalSubmesh);
+		cgalSubmesh->collect_garbage();
 
-		m_Submesh = FormatTool::CGALMeshToMesh(m_CGALSubmesh, glm::mat4(1.0f));
+		m_Submesh = FormatTool::CGALMeshToMesh(cgalSubmesh, glm::mat4(1.0f));
 		m_Submesh->SetName("Submesh");
+
+		GC_CORE_INFO("Completed!");
 	}
 
 	void PlacementTool::ParameterizeSubmesh()
 	{
-		halfedge_descriptor bhd = CGALpmp::longest_border(*m_CGALSubmesh).first;
-		m_SubmeshUVMap = m_CGALSubmesh->add_property_map<vertex_descriptor, CGALPoint2>("h:uv").first;
-		SMP::ARAP_parameterizer_3<CGALMesh> parameterizer;
-		SMP::Error_code err = SMP::parameterize(*m_CGALSubmesh, parameterizer, bhd, m_SubmeshUVMap);
-		std::ofstream out("parameterize.off");
-		SMP::IO::output_uvmap_to_off(*m_CGALSubmesh, bhd, m_SubmeshUVMap, out);
-		//CGAL::IO::write_polygon_mesh("Submesh.obj", *cgalSubmesh, CGAL::parameters::stream_precision(17));
+		GC_CORE_WARN("Parameterizing submesh.");
 
-		// Save UV boundary
-		for (halfedge_descriptor h : halfedges_around_face(bhd, *m_CGALSubmesh)) {
-			CGALMesh::Vertex_index v = target(h, *m_CGALSubmesh);
-			m_SubmeshBoundary.push_back(v);
-			m_SubmeshUVBoundary.push_back(m_SubmeshUVMap[v]);
+		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(m_Submesh, m_Submesh->GetPsTransform());
+		halfedge_descriptor bhd = CGALpmp::longest_border(*cgalSubmesh).first;
+		UV_pmap uvMap = cgalSubmesh->add_property_map<vertex_descriptor, CGALPoint2>("h:uv").first;
+		SMP::ARAP_parameterizer_3<CGALMesh> parameterizer;
+		SMP::Error_code err = SMP::parameterize(*cgalSubmesh, parameterizer, bhd, uvMap);
+		for (vertex_descriptor v : vertices(*cgalSubmesh)) {
+			m_UVCoords.push_back({ uvMap[v].x(), uvMap[v].y()});
 		}
+
+		std::ofstream out("parameterize.off");
+		SMP::IO::output_uvmap_to_off(*cgalSubmesh, bhd, uvMap, out);
+
+		GC_CORE_INFO("Completed!");
 	}
 
 	void PlacementTool::CalculateGeodesicDistance()
 	{
-		halfedge_descriptor bhd = CGALpmp::longest_border(*m_CGALSubmesh).first;
-		Vertex_distance_map vertex_distance = m_CGALSubmesh->add_property_map<vertex_descriptor, double>("v:distance", 0).first;
-		Heat_method hm(*m_CGALSubmesh);
-		for (halfedge_descriptor hed : halfedges_around_face(bhd, *m_CGALSubmesh)) {
-			vertex_descriptor source1 = source(hed, *m_CGALSubmesh);
-			hm.add_source(source1);
+		GC_CORE_WARN("Calculating geodesic distance.");
+
+		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(m_Submesh, m_Submesh->GetPsTransform());
+		halfedge_descriptor bhd = CGALpmp::longest_border(*cgalSubmesh).first;
+		Vertex_distance_map vertexDistance = cgalSubmesh->add_property_map<vertex_descriptor, double>("v:distance", 0).first;
+		Heat_method hm(*cgalSubmesh);
+		for (halfedge_descriptor hed : halfedges_around_face(bhd, *cgalSubmesh)) {
+			vertex_descriptor sourceVertex = source(hed, *cgalSubmesh);
+			hm.add_source(sourceVertex);
 		}
-		hm.estimate_geodesic_distances(vertex_distance);
-		for (vertex_descriptor vd : vertices(*m_CGALSubmesh)) {
-			m_GeodesicDistance.push_back(get(vertex_distance, vd));
+		hm.estimate_geodesic_distances(vertexDistance);
+		for (vertex_descriptor v : vertices(*cgalSubmesh)) {
+			m_GeodesicDistances.push_back(vertexDistance[v]);
 		}
+
+		GC_CORE_INFO("Completed!");
 	}
 
-	void PlacementTool::CreateBooleanMeshForSink()
+	void PlacementTool::CreateMeshForBooleanHole()
 	{
 		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
 		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
+		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(m_Submesh, m_Submesh->GetPsTransform());
 
-		// Extract boundary
+		std::vector<glm::vec3> sortedVertices = ExtractBooleanMeshBoundary();
+
+		std::shared_ptr<CGALMesh> cgalBooleanMesh = std::make_shared<CGALMesh>();
+		glm::vec3 normal;
+		float holeDepth = gemPatternUI.GetHoleDepth();
+		int len = sortedVertices.size();
+		for (int i = 0; i < len; i++) {
+			normal = geodesic->CalculateNormal(sortedVertices[i]);
+			cgalBooleanMesh->add_vertex(CGALPoint(sortedVertices[i].x + 0.2f * normal.x, sortedVertices[i].y + 0.2f * normal.y, sortedVertices[i].z + 0.2f * normal.z));
+			cgalBooleanMesh->add_vertex(CGALPoint(sortedVertices[i].x - holeDepth * normal.x, sortedVertices[i].y - holeDepth * normal.y, sortedVertices[i].z - holeDepth * normal.z));
+		}
+		for (int i = 0; i < len; i++) {
+			cgalBooleanMesh->add_face(CGALMesh::vertex_index((2 * i) % (2 * len)), CGALMesh::vertex_index((2 * i + 2) % (2 * len)), CGALMesh::vertex_index((2 * i + 3) % (2 * len)));
+			cgalBooleanMesh->add_face(CGALMesh::vertex_index((2 * i) % (2 * len)), CGALMesh::vertex_index((2 * i + 3) % (2 * len)), CGALMesh::vertex_index((2 * i + 1) % (2 * len)));
+		}
+
+		unsigned int nbHoles = 0;
+		std::vector<halfedge_descriptor> borderCycles;
+		CGALpmp::extract_boundary_cycles(*cgalBooleanMesh, std::back_inserter(borderCycles));
+		for (halfedge_descriptor h : borderCycles) {
+			std::vector<face_descriptor>  patchFaces;
+			std::vector<vertex_descriptor> patchVertices;
+			bool success = std::get<0>(CGALpmp::triangulate_refine_and_fair_hole(*cgalBooleanMesh,
+				h,
+				CGAL::parameters::face_output_iterator(std::back_inserter(patchFaces))
+				.vertex_output_iterator(std::back_inserter(patchVertices))
+				.fairing_continuity(0)));
+			++nbHoles;
+		}
+
+		CGALpmp::smooth_shape(*cgalBooleanMesh, 0.001, CGAL::parameters::number_of_iterations(10));
+
+		std::ofstream out("boolean_mesh.obj");
+		CGAL::IO::write_OBJ(out, *cgalBooleanMesh);
+		out.close();
+
+		m_BooleanMesh = FormatTool::CGALMeshToMesh(cgalBooleanMesh, glm::mat4(1.0f));
+		m_BooleanMesh->SetName("Boolean Mesh");
+	}
+
+	GemGroup PlacementTool::PlaceGemsOnSelectedRegion()
+	{
+		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
+		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
+		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(m_Submesh, m_Submesh->GetPsTransform());
+
+		// Generate Packing
+		std::vector<glm::vec2> boundary;
+		halfedge_descriptor bhd = CGALpmp::longest_border(*cgalSubmesh).first;
+		for (halfedge_descriptor h : halfedges_around_face(bhd, *cgalSubmesh)) {
+			CGALMesh::Vertex_index v = target(h, *cgalSubmesh);
+			boundary.push_back(m_UVCoords[v]);
+		}
+
+		Packing2D packing2D;
+		float gemScale = gemPatternUI.GetGemScale();
+		float holeShrinkLength = gemPatternUI.GetHoleShrinkLength();
+		float gridRotation = glm::radians(gemPatternUI.GetGridRotation());
+
+		std::vector<glm::vec2> targetPoints;
+		if (gemPatternUI.GetCurSelectedPackingMode() == PackingMode::Hexagonal) {
+			float cellRadius = 0.55f * gemScale;
+			float shrinkLength = holeShrinkLength + 0.1f * cellRadius;
+			targetPoints = packing2D.GenerateHexagonalPacking(0.55f * gemScale, gridRotation, boundary, shrinkLength);
+		}
+		else if (gemPatternUI.GetCurSelectedPackingMode() == PackingMode::Square) {
+			float cellRadius = 0.55f * gemScale;
+			float shrinkLength = holeShrinkLength + 0.1f * cellRadius;
+			targetPoints = packing2D.GenerateSquarePacking(0.55f * gemScale, gridRotation, boundary, shrinkLength);
+		}
+		else if (gemPatternUI.GetCurSelectedPackingMode() == PackingMode::Compact) {
+			float cellRadius = 0.6f * gemScale;
+			float shrinkLength = holeShrinkLength + 0.1f * cellRadius;
+			targetPoints = packing2D.GenerateCompactPacking(cellRadius, gridRotation, boundary, shrinkLength, gemPatternUI.GetPackingEdgeLoopDensity(), gemPatternUI.GetPackingCenterDensity());
+		}
+
+		std::vector<glm::vec3> positions = Map2DPointsTo3D(targetPoints);
+		return PlaceGemsOnPositions(positions);
+	}
+
+	GemGroup PlacementTool::PlaceGemsAtTargets()
+	{
+		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
+		const GemSettingSelectionUI& gemSettingSelectionUI = m_Scene->m_GemSettingSelectionUI;
+		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
+
+		GemSettingType settingType = gemSettingSelectionUI.GetCurSelectedGemSetting();
+		float gemExposureDepth = gemPatternUI.GetGemExposureLength();
+
+		float gemScale = gemPatternUI.GetGemScale();
+		float spacing = (GetParams(settingType).GemSpacing + 1.0f) * gemScale;
+
+		std::vector<std::shared_ptr<Mesh>> gems;
+		std::vector<std::shared_ptr<Mesh>> gemSettings;
+
+		std::vector<glm::vec3> positions = polyscope::state::targetPositions;
+		std::vector<glm::vec3> normals = polyscope::state::targetNormals;
+
+		for (size_t i = 0; i < positions.size(); i++) {
+			GemSpecification spec;
+			spec.SettingType = settingType;
+			spec.Position = positions[i];
+			spec.Normal = normals[i];
+
+			glm::vec3 v;
+			if (std::abs(spec.Normal.x) < std::abs(spec.Normal.y)) {
+				v = glm::vec3(1.0f, 0.0f, 0.0f);
+			}
+			else {
+				v = glm::vec3(0.0f, 1.0f, 0.0f);
+			}
+			spec.Forward = glm::cross(spec.Normal, v);
+
+			spec.ExposureDepth = 0.0f;
+			spec.Scale = gemScale;
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(3) << "Gem (" << spec.Position.x << "," << spec.Position.y << "," << spec.Position.z << ")";
+			spec.Name = ss.str();
+			gems.push_back(PlaceGem(spec));
+		}
+
+		for (size_t i = 0; i < positions.size(); i++) {
+			GemSettingSpecification spec;
+			spec.SettingType = settingType;
+			spec.Position = positions[i];
+			spec.Normal = normals[i];
+
+			glm::vec3 v;
+			if (std::abs(spec.Normal.x) < std::abs(spec.Normal.y)) {
+				v = glm::vec3(1.0f, 0.0f, 0.0f);
+			}
+			else {
+				v = glm::vec3(0.0f, 1.0f, 0.0f);
+			}
+			spec.Forward = glm::cross(spec.Normal, v);
+
+			spec.ExposureDepth = 0.0f;
+			spec.Scale = gemScale;
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(3) << "GemSetting (" << spec.Position.x << "," << spec.Position.y << "," << spec.Position.z << ")";
+			spec.Name = ss.str();
+			gemSettings.push_back(PlaceGemSetting(spec));
+		}
+
+		return GemGroup(settingType, gems, gemSettings);
+	}
+
+	std::vector<glm::vec3> PlacementTool::ExtractBooleanMeshBoundary()
+	{
+		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
+		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(m_Submesh, m_Submesh->GetPsTransform());
+
 		std::vector<glm::vec3> positions;
 		std::vector<std::array<size_t, 2>> edgeInds;
 		if (gemPatternUI.GetEnableHoleShrink()) {
@@ -89,8 +245,8 @@ namespace GemCraft {
 			for (auto& face : m_Submesh->GetFaces()) {
 				std::vector<glm::vec3> pos;
 				for (size_t i = 0; i < face.size(); i++) {
-					float vs = m_GeodesicDistance[face[i]];
-					float vd = m_GeodesicDistance[face[(i + 1) % face.size()]];
+					float vs = m_GeodesicDistances[face[i]];
+					float vd = m_GeodesicDistances[face[(i + 1) % face.size()]];
 					int region1 = floor(vs / holeShrinkLength);
 					int region2 = floor(vd / holeShrinkLength);
 					if ((region1 == 0 && region2 == 1) || (region1 == 1 && region2 == 0)) {
@@ -110,12 +266,12 @@ namespace GemCraft {
 			}
 		}
 		else {
-			halfedge_descriptor bhd = CGALpmp::longest_border(*m_CGALSubmesh).first;
-			for (halfedge_descriptor hed : halfedges_around_face(bhd, *m_CGALSubmesh)) {
-				vertex_descriptor p0 = source(hed, *m_CGALSubmesh);
-				vertex_descriptor p1 = target(hed, *m_CGALSubmesh);
-				positions.push_back({ m_CGALSubmesh->point(p0).x(), m_CGALSubmesh->point(p0).y(), m_CGALSubmesh->point(p0).z() });
-				positions.push_back({ m_CGALSubmesh->point(p1).x(), m_CGALSubmesh->point(p1).y(), m_CGALSubmesh->point(p1).z() });
+			halfedge_descriptor bhd = CGALpmp::longest_border(*cgalSubmesh).first;
+			for (halfedge_descriptor hed : halfedges_around_face(bhd, *cgalSubmesh)) {
+				vertex_descriptor p0 = source(hed, *cgalSubmesh);
+				vertex_descriptor p1 = target(hed, *cgalSubmesh);
+				positions.push_back({ cgalSubmesh->point(p0).x(), cgalSubmesh->point(p0).y(), cgalSubmesh->point(p0).z() });
+				positions.push_back({ cgalSubmesh->point(p1).x(), cgalSubmesh->point(p1).y(), cgalSubmesh->point(p1).z() });
 				edgeInds.push_back({ positions.size() - 2, positions.size() - 1 });
 			}
 		}
@@ -166,10 +322,10 @@ namespace GemCraft {
 			Face_location faceLoc = submeshGeodesic.LocatePoint(CGALPoint(v.x, v.y, v.z));
 			size_t faceID = faceLoc.first;
 			CGAL::Vertex_around_face_iterator<CGALMesh> vbegin, vend;
-			glm::vec2 sum{ 0.0f, 0.0f };
+			glm::vec2 sum(0.0f, 0.0f);
 			int count = 0;
-			for (boost::tie(vbegin, vend) = m_CGALSubmesh->vertices_around_face(m_CGALSubmesh->halfedge(face_descriptor(faceID))); vbegin != vend; ++vbegin) {
-				sum += glm::vec2{ m_SubmeshUVMap[*vbegin].x() * faceLoc.second[count], m_SubmeshUVMap[*vbegin].y() * faceLoc.second[count] };
+			for (boost::tie(vbegin, vend) = cgalSubmesh->vertices_around_face(cgalSubmesh->halfedge(face_descriptor(faceID))); vbegin != vend; ++vbegin) {
+				sum += glm::vec2{ m_UVCoords[*vbegin].x * faceLoc.second[count], m_UVCoords[*vbegin].y * faceLoc.second[count] };
 				count++;
 			}
 			polygon.push_back(CGALPoint2(sum.x, sum.y));
@@ -178,77 +334,22 @@ namespace GemCraft {
 			std::reverse(sortedVertices.begin(), sortedVertices.end());
 		}
 
-		std::shared_ptr<CGALMesh> cgalBooleanMesh = std::make_shared<CGALMesh>();
-		glm::vec3 normal;
-		float holeDepth = gemPatternUI.GetHoleDepth();
-		int len = sortedVertices.size();
-		for (int i = 0; i < len; i++) {
-			normal = geodesic->CalculateNormal(sortedVertices[i]);
-			cgalBooleanMesh->add_vertex(CGALPoint(sortedVertices[i].x + 0.2f * normal.x, sortedVertices[i].y + 0.2f * normal.y, sortedVertices[i].z + 0.2f * normal.z));
-			cgalBooleanMesh->add_vertex(CGALPoint(sortedVertices[i].x - holeDepth * normal.x, sortedVertices[i].y - holeDepth * normal.y, sortedVertices[i].z - holeDepth * normal.z));
-		}
-		for (int i = 0; i < len; i++) {
-			cgalBooleanMesh->add_face(CGALMesh::vertex_index((2 * i) % (2 * len)), CGALMesh::vertex_index((2 * i + 2) % (2 * len)), CGALMesh::vertex_index((2 * i + 3) % (2 * len)));
-			cgalBooleanMesh->add_face(CGALMesh::vertex_index((2 * i) % (2 * len)), CGALMesh::vertex_index((2 * i + 3) % (2 * len)), CGALMesh::vertex_index((2 * i + 1) % (2 * len)));
-		}
-
-		unsigned int nbHoles = 0;
-		std::vector<halfedge_descriptor> borderCycles;
-		// collect one halfedge per boundary cycle
-		CGALpmp::extract_boundary_cycles(*cgalBooleanMesh, std::back_inserter(borderCycles));
-		for (halfedge_descriptor h : borderCycles) {
-			std::vector<face_descriptor>  patchFaces;
-			std::vector<vertex_descriptor> patchVertices;
-			bool success = std::get<0>(CGALpmp::triangulate_refine_and_fair_hole(*cgalBooleanMesh,
-				h,
-				CGAL::parameters::face_output_iterator(std::back_inserter(patchFaces))
-				.vertex_output_iterator(std::back_inserter(patchVertices))
-				.fairing_continuity(0)));
-			++nbHoles;
-		}
-
-		CGALpmp::smooth_shape(*cgalBooleanMesh, 0.001, CGAL::parameters::number_of_iterations(10));
-
-		std::ofstream out("boolean_mesh.obj");
-		CGAL::IO::write_OBJ(out, *cgalBooleanMesh);
-		out.close();
-
-		m_BooleanMesh = FormatTool::CGALMeshToMesh(cgalBooleanMesh, glm::mat4(1.0f));
-		m_BooleanMesh->SetName("Boolean Mesh");
+		return sortedVertices;
 	}
 
-	GemGroup PlacementTool::PlaceGemsOnSelectedRegion()
+	std::vector<glm::vec3> PlacementTool::Map2DPointsTo3D(std::vector<glm::vec2>& points)
 	{
 		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
-		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
-		
-		// Generate Hexagonal Packing
-		auto [center, boundingRadius] = CalculateBoundingCircle(m_SubmeshUVBoundary);
-		float gemScale = gemPatternUI.GetGemScale();
-		float holeShrinkLength = gemPatternUI.GetHoleShrinkLength();
-		int gridStep = 2.0 * boundingRadius / gemScale;
-		float cellRadius = 0.55f * gemScale;
-		float gridRotation = glm::radians(gemPatternUI.GetGridRotation());
-
-		std::vector<CGALPoint2> targetPoints;
-		
-		if (gemPatternUI.GetCurSelectedPackingMode() == PackingMode::Hexagonal) {
-			targetPoints = GenerateHexagonalPacking(center, gridStep, cellRadius, gridRotation);
-		}
-		else if (gemPatternUI.GetCurSelectedPackingMode() == PackingMode::Square) {
-			targetPoints = GenerateSquarePacking(center, gridStep, cellRadius, gridRotation);
-		}
-
-		std::vector<CGALPoint2> clippedPoints = ClipToUVBoundary(targetPoints, m_SubmeshUVBoundary, cellRadius + holeShrinkLength);
-
+		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(m_Submesh, m_Submesh->GetPsTransform());
 		Triangulation t;
 		std::map<CGALPoint2, vertex_descriptor> vertexMap;
-		for (auto v : vertices(*m_CGALSubmesh)) {
-			t.insert(m_SubmeshUVMap[v]);
-			vertexMap[m_SubmeshUVMap[v]] = v;
+		for (auto v : vertices(*cgalSubmesh)) {
+			t.insert({ m_UVCoords[v].x, m_UVCoords[v].y });
+			vertexMap[{ m_UVCoords[v].x, m_UVCoords[v].y }] = v;
 		}
 		std::vector<glm::vec3> positions;
-		for (CGALPoint2 query : clippedPoints) {
+		for (auto& point : points) {
+			CGALPoint2 query(point.x, point.y);
 			Triangulation::Face_handle fh = t.locate(query);
 			std::vector<std::pair<CGALPoint2, double>> coords;
 			double norm = CGAL::natural_neighbor_coordinates_2(t, query, std::back_inserter(coords)).second;
@@ -256,7 +357,7 @@ namespace GemCraft {
 			for (const auto& pair : coords) {
 				vertex_descriptor v = vertexMap[pair.first];
 				double weight = pair.second / norm;
-				targetPoint += weight * CGALVector(m_CGALSubmesh->point(v).x(), m_CGALSubmesh->point(v).y(), m_CGALSubmesh->point(v).z());
+				targetPoint += weight * CGALVector(cgalSubmesh->point(v).x(), cgalSubmesh->point(v).y(), cgalSubmesh->point(v).z());
 			}
 			size_t faceID = geodesic->LocatePoint(targetPoint).first;
 			std::set<size_t> selectedRegion = polyscope::state::selectedRegion.Faces();
@@ -264,142 +365,7 @@ namespace GemCraft {
 				positions.push_back({ targetPoint.x(), targetPoint.y(), targetPoint.z() });
 			}
 		}
-
-
-
-
-
-
-
-
-		//Triangulation t;
-		//std::vector<CGALPoint2> points;
-		//std::map<CGALPoint2, vertex_descriptor> vertexMap;
-		//for (auto v : vertices(*cgalSubmesh)) {
-		//	t.insert(uvMap[v]);
-		//	vertexMap[uvMap[v]] = v;
-		//	points.push_back(uvMap[v]);
-		//}
-
-		//double min_x = std::numeric_limits<double>::max();
-		//double max_x = std::numeric_limits<double>::min();
-		//double min_y = std::numeric_limits<double>::max();
-		//double max_y = std::numeric_limits<double>::min();
-		//for (const auto& p : points) {
-		//	min_x = std::min(min_x, p.x());
-		//	max_x = std::max(max_x, p.x());
-		//	min_y = std::min(min_y, p.y());
-		//	max_y = std::max(max_y, p.y());
-		//}
-		//CGALPoint2 center((min_x + max_x) / 2.0, (min_y + max_y) / 2.0);
-		//double maxDistance = 0.0;
-		//for (const auto& p : points) {
-		//	double distance = CGAL::sqrt(CGAL::squared_distance(center, p));
-		//	maxDistance = std::max(maxDistance, distance);
-		//}
-		//int nGrid = 1.5 * maxDistance / 2.0;
-
-		//std::vector<glm::vec3> positions;
-		//for (int i = -nGrid; i <= nGrid; i++) {
-		//	for (int j = -nGrid; j <= nGrid; j++) {
-		//		glm::vec2 offset = { i * 2.0f, j * 2.0f };
-		//		float angleRad = glm::radians(gemPatternUI.GetGridRotation());
-		//		float cosTheta = std::cos(angleRad);
-		//		float sinTheta = std::sin(angleRad);
-		//		glm::vec2 rotatedOffset;
-		//		rotatedOffset.x = offset.x * cosTheta - offset.y * sinTheta;
-		//		rotatedOffset.y = offset.x * sinTheta + offset.y * cosTheta;
-
-		//		CGALPoint2 query(center.x() + rotatedOffset.x, center.x() + rotatedOffset.y);
-		//		Triangulation::Face_handle fh = t.locate(query);
-		//		std::vector<std::pair<CGALPoint2, double>> coords;
-		//		double norm = CGAL::natural_neighbor_coordinates_2(t, query, std::back_inserter(coords)).second;
-		//		CGALPoint targetPoint(0, 0, 0);
-		//		for (const auto& pair : coords) {
-		//			vertex_descriptor v = vertexMap[pair.first];
-		//			double weight = pair.second / norm;
-		//			CGALVector tempVector = { cgalSubmesh->point(v).x(), cgalSubmesh->point(v).y(), cgalSubmesh->point(v).z() };
-		//			tempVector = weight * tempVector;
-		//			targetPoint += tempVector;
-		//		}
-
-		//		size_t faceID = geodesic->LocatePoint(targetPoint).first;
-		//		std::set<size_t> selectedRegion = polyscope::state::selectedRegion.Faces();
-		//		if (selectedRegion.find(faceID) != selectedRegion.end()) {
-		//			positions.push_back({ targetPoint.x(), targetPoint.y(), targetPoint.z() });
-		//		}
-		//	}
-		//}
-
-		return PlaceGemsOnPositions(positions);
-	}
-
-	GemGroup PlacementTool::PlaceGemsAtTargets()
-	{
-		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
-		const GemSettingSelectionUI& gemSettingSelectionUI = m_Scene->m_GemSettingSelectionUI;
-		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
-
-		GemSettingType settingType = gemSettingSelectionUI.GetCurSelectedGemSetting();
-		float gemExposureDepth = gemPatternUI.GetGemExposureDepth();
-
-		float gemScale = gemPatternUI.GetGemScale();
-		float spacing = (GetParams(settingType).GemSpacing + 1.0f) * gemScale;
-
-		std::vector<std::shared_ptr<Mesh>> gems;
-		std::vector<std::shared_ptr<Mesh>> gemSettings;
-
-		std::vector<glm::vec3> positions = polyscope::state::targetPositions;
-		std::vector<glm::vec3> normals = polyscope::state::targetNormals;
-
-		for (size_t i = 0; i < positions.size(); i++) {
-
-			GemSpecification spec;
-			spec.SettingType = settingType;
-			spec.Position = positions[i];
-			spec.Normal = normals[i];
-
-			glm::vec3 v;
-			if (std::abs(spec.Normal.x) < std::abs(spec.Normal.y)) {
-				v = glm::vec3(1.0f, 0.0f, 0.0f);
-			}
-			else {
-				v = glm::vec3(0.0f, 1.0f, 0.0f);
-			}
-			spec.Forward = glm::cross(spec.Normal, v);
-
-			spec.ExposureDepth = 0.0f;
-			spec.Scale = gemScale;
-			std::stringstream ss;
-			ss << std::fixed << std::setprecision(3) << "Gem (" << spec.Position.x << "," << spec.Position.y << "," << spec.Position.z << ")";
-			spec.Name = ss.str();
-			gems.push_back(PlaceGem(spec));
-		}
-
-		for (size_t i = 0; i < positions.size(); i++) {
-			GemSettingSpecification spec;
-			spec.SettingType = settingType;
-			spec.Position = positions[i];
-			spec.Normal = normals[i];
-
-			glm::vec3 v;
-			if (std::abs(spec.Normal.x) < std::abs(spec.Normal.y)) {
-				v = glm::vec3(1.0f, 0.0f, 0.0f);
-			}
-			else {
-				v = glm::vec3(0.0f, 1.0f, 0.0f);
-			}
-			spec.Forward = glm::cross(spec.Normal, v);
-
-			spec.ExposureDepth = 0.0f;
-			spec.Scale = gemScale;
-			std::stringstream ss;
-			ss << std::fixed << std::setprecision(3) << "GemSetting (" << spec.Position.x << "," << spec.Position.y << "," << spec.Position.z << ")";
-			spec.Name = ss.str();
-			gemSettings.push_back(PlaceGemSetting(spec));
-		}
-
-		return GemGroup(settingType, gems, gemSettings);
+		return positions;
 	}
 
 	std::shared_ptr<Mesh> PlacementTool::PlaceGem(const std::string& name, GemSettingType settingType, const glm::mat4& transform)
@@ -455,7 +421,7 @@ namespace GemCraft {
 		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
 
 		GemSettingType settingType = gemSettingSelectionUI.GetCurSelectedGemSetting();
-		float gemExposureDepth = gemPatternUI.GetGemExposureDepth();
+		float gemExposureDepth = gemPatternUI.GetGemExposureLength();
 		float gemScale = gemPatternUI.GetGemScale();
 		float spacing = (GetParams(settingType).GemSpacing + 1.0f) * gemScale;
 
@@ -521,119 +487,26 @@ namespace GemCraft {
 
 		// Geodesic distance
 		{
-			auto maxIter = std::max_element(m_GeodesicDistance.begin(), m_GeodesicDistance.end());
+			auto maxIter = std::max_element(m_GeodesicDistances.begin(), m_GeodesicDistances.end());
 			float maxValue = *maxIter;
 
 			std::vector<glm::vec3> vertexColors(m_Submesh->GetVertices().size());
 			for (size_t i = 0; i < m_Submesh->GetVertices().size(); i++) {
-				float value = m_GeodesicDistance[i] / maxValue;
+				float value = m_GeodesicDistances[i] / maxValue;
 				vertexColors[i] = { value, value, value };
 			}
 			polyscope::SurfaceVertexColorQuantity* showFaces = m_Submesh->GetPsMesh()->addVertexColorQuantity("Geodesic Distance", vertexColors);
 			showFaces->setEnabled(true);
 		}
+	}
 
+	void PlacementTool::ShowBooleanMesh()
+	{
 		// Boolean mesh
 		{
 			m_Scene->AddMesh(m_BooleanMesh);
 			m_BooleanMesh->GetPsMesh()->setEnabled(false);
 		}
-
-
-		//polyscope::SurfaceGraphQuantity* isolines = m_Submesh->GetPsMesh()->addSurfaceGraphQuantity("Isolines", positions, edgeInds);
-		//isolines->setEnabled(true);
-		//isolines->setRadius(0.002f);
-		//isolines->setColor({ 0.0, 0.0, 0.0 });
-	}
-
-	static std::pair<CGALPoint2, float> CalculateBoundingCircle(std::vector<CGALPoint2>& points)
-	{
-		double min_x = std::numeric_limits<double>::max();
-		double max_x = std::numeric_limits<double>::min();
-		double min_y = std::numeric_limits<double>::max();
-		double max_y = std::numeric_limits<double>::min();
-		for (const auto& p : points) {
-			min_x = std::min(min_x, p.x());
-			max_x = std::max(max_x, p.x());
-			min_y = std::min(min_y, p.y());
-			max_y = std::max(max_y, p.y());
-		}
-		CGALPoint2 center((min_x + max_x) / 2.0, (min_y + max_y) / 2.0);
-		double radius = 0.0;
-		for (const auto& p : points) {
-			double distance = CGAL::sqrt(CGAL::squared_distance(center, p));
-			radius = std::max(radius, distance);
-		}
-		return { center, radius };
-	}
-
-	static std::vector<CGALPoint2> GenerateSquarePacking(CGALPoint2 center, int gridStep, float cellRadius, float gridRotation)
-	{
-		std::vector<CGALPoint2> points;
-		float dx = 2 * cellRadius;	// horizontal spacing
-		float dy = 2 * cellRadius;	// vertical spacing
-		float cosTheta = std::cos(gridRotation);
-		float sinTheta = std::sin(gridRotation);
-
-		for (int i = -gridStep; i <= gridStep; i++) {
-			for (int j = -gridStep; j <= gridStep; j++) {
-				glm::vec2 offset{ i * dx, j * dy };
-				glm::vec2 rotatedOffset;
-				rotatedOffset.x = offset.x * cosTheta - offset.y * sinTheta;
-				rotatedOffset.y = offset.x * sinTheta + offset.y * cosTheta;
-				points.push_back(CGALPoint2(center.x() + rotatedOffset.x, center.y() + rotatedOffset.y));
-			}
-		}
-		return points;
-	}
-
-	static std::vector<CGALPoint2> GenerateHexagonalPacking(CGALPoint2 center, int gridStep, float cellRadius, float gridRotation)
-	{
-		std::vector<CGALPoint2> points;
-		float dx = cellRadius * sqrt(3) * 2.0f;	// horizontal spacing
-		float dy = cellRadius;					// vertical spacing
-		float cosTheta = std::cos(gridRotation);
-		float sinTheta = std::sin(gridRotation);
-
-		for (int i = -gridStep; i <= gridStep; i++) {
-			for (int j = -gridStep; j <= gridStep; j++) {
-				glm::vec2 offset{ i * dx, j * dy };
-				if (j % 2 != 0) {
-					offset.x += dx * 0.5f; // even row offset
-				}
-				glm::vec2 rotatedOffset;
-				rotatedOffset.x = offset.x * cosTheta - offset.y * sinTheta;
-				rotatedOffset.y = offset.x * sinTheta + offset.y * cosTheta;
-				points.push_back(CGALPoint2(center.x() + rotatedOffset.x, center.y() + rotatedOffset.y));
-			}
-		}
-		return points;
-	}
-
-	static std::vector<CGALPoint2> ClipToUVBoundary(const std::vector<CGALPoint2>& points, const std::vector<CGALPoint2>& boundary, float radius)
-	{
-		std::vector<CGALPoint2> clippedPoints;
-		CGAL::Polygon_2<Kernel> polygon(boundary.begin(), boundary.end());
-
-		for (const auto& point : points) {
-			bool flag = true;
-			int nSamples = 100;
-			for (int i = 0; i < nSamples; i++) {
-				float angle = 2.0f * glm::pi<float>() * i / nSamples;
-				CGALPoint2 pointOnCircle{ point.x() + radius * std::cos(angle), point.y() + radius * std::sin(angle) };
-				if (polygon.bounded_side(pointOnCircle) != CGAL::ON_BOUNDED_SIDE) {
-					flag = false;
-					break;
-				}
-			}
-			//if (polygon.bounded_side(point) != CGAL::ON_BOUNDED_SIDE) {
-			//	flag = false;
-			//}
-			if (flag) {
-				clippedPoints.push_back(point);
-			}
-		}
-		return clippedPoints;
 	}
 
 	static double ComputeSignedArea(const std::vector<CGALPoint2>& polygon)

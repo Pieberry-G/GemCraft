@@ -65,13 +65,15 @@ namespace GemCraft {
     {
         Hexagonal,
         Square,
+        Compact,
     };
 
     inline std::string GetName(PackingMode packingMode)
     {
         static const std::unordered_map<PackingMode, std::string> enumToString = {
-            { PackingMode::Hexagonal, "Hexagonal Mode"      },
-            { PackingMode::Square,    "Square Mode"     },
+            { PackingMode::Hexagonal, "Hexagonal Mode" },
+            { PackingMode::Square,    "Square Mode"    },
+            { PackingMode::Compact,   "Compact Mode"   },
         };
 
         auto it = enumToString.find(packingMode);
