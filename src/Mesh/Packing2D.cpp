@@ -28,8 +28,7 @@ namespace GemCraft {
 			}
 		}
 
-		std::vector<glm::vec2> clippedPoints = ClipPointsToBoundary(points, cellRadius + shrinkLength, boundary);
-		return clippedPoints;
+		return ClipPointsToBoundary(points, cellRadius + shrinkLength, boundary);
 	}
 
 	std::vector<glm::vec2> Packing2D::GenerateHexagonalPacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength)
@@ -54,9 +53,8 @@ namespace GemCraft {
 				points.push_back({ center.x + rotatedOffset.x, center.y + rotatedOffset.y });
 			}
 		}
-
-		std::vector<glm::vec2> clippedPoints = ClipPointsToBoundary(points, cellRadius + shrinkLength, boundary);
-		return clippedPoints;
+ 
+		return ClipPointsToBoundary(points, cellRadius + shrinkLength, boundary);
 	}
 
 	std::vector<glm::vec2> Packing2D::GenerateCompactPackingOld(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength, float packingEdgeLoopDensity, float packingCenterDensity)
@@ -262,4 +260,5 @@ namespace GemCraft {
 		}
 		return result;
 	}
-}
+
+} // namespace GemCraft

@@ -7,7 +7,6 @@
 #include "EventSystem/ApplicationEvent.h"
 
 #include <polyscope/polyscope.h>
-#include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <filesystem>
 
@@ -91,7 +90,7 @@ namespace GemCraft {
     {
         std::string filepath = FileDialogs::OpenFile("AI Generated Mesh (*.obj)\0*.obj\0");
         if (!filepath.empty()) {
-           std::shared_ptr<Scene>& scene = Application::Get()->GetScene();
+           std::unique_ptr<Scene>& scene = Application::Get()->GetScene();
            scene->Clean();
 
            GC_CORE_WARN("Loading ring file: {0}", filepath);
@@ -129,7 +128,7 @@ namespace GemCraft {
     {
         std::string filepath = FileDialogs::SaveFile("(*.obj)\0*.obj\0");
         if (!filepath.empty()) {
-            std::shared_ptr<Scene> scene = Application::Get()->GetScene();
+            std::unique_ptr<Scene>& scene = Application::Get()->GetScene();
             std::ofstream out(filepath);
             if (!out) {
                 GC_CORE_ASSERT(false, "Can not open file!");

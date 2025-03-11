@@ -7,8 +7,6 @@
 #include "EventSystem/ApplicationEvent.h"
 #include "EventSystem/KeyEvent.h"
 
-#include <polyscope/polyscope.h>
-
 namespace GemCraft {
 
 	class Application
@@ -23,7 +21,7 @@ namespace GemCraft {
 		bool OnKeyReleased(KeyReleasedEvent& e);
 		bool OnAppRender(AppRenderEvent& e);
 
-		std::shared_ptr<Scene>& GetScene() { return m_Scene; }
+		std::unique_ptr<Scene>& GetScene() { return m_Scene; }
 
 		static Application* Get() { return s_Instance; }
 
@@ -31,7 +29,7 @@ namespace GemCraft {
 		MainMenu m_MainMenu;
 		ResourceManager* m_ResourceManager;
 
-		std::shared_ptr<Scene> m_Scene;
+		std::unique_ptr<Scene> m_Scene;
 
 	private:
 		static Application* s_Instance;

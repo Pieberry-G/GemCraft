@@ -21,4 +21,4 @@ namespace GemCraft {
 		std::vector<glm::vec2> GenerateCompactPacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength, float packingEdgeLoopDensity, float packingCenterDensity);
 	};
 
-}
+} // namespace GemCraft

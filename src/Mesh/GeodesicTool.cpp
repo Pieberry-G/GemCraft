@@ -19,40 +19,11 @@ namespace GemCraft {
 		std::vector<edge_descriptor>& m_Edges;
 	};
 
-	GeodesicTool::GeodesicTool(std::shared_ptr<Mesh>& mesh, Scene* scene)
-		: m_Scene(scene)
+	GeodesicTool::GeodesicTool(std::shared_ptr<Mesh>& mesh)
 	{
 		GC_CORE_WARN("Initializing geodesic.");
 
 		m_CGALmesh = FormatTool::MeshToCGALMesh(mesh, mesh->GetPsTransform());
-		//double target_edge_length = 0.7;
-		//unsigned int nb_iter = 10;
-
-		//std::vector<edge_descriptor> border;
-		//CGALpmp::border_halfedges(faces(*m_CGALmesh), *m_CGALmesh, boost::make_function_output_iterator(HalfedgeToEdge(*m_CGALmesh, border)));
-		//CGALpmp::split_long_edges(border, target_edge_length, *m_CGALmesh);
-
-		//CGALMesh::Property_map<edge_descriptor, bool> edge_is_sharp =
-		//	m_CGALmesh->add_property_map<edge_descriptor, bool>("e:sharp", false).first;
-		//CGAL::Polygon_mesh_processing::detect_sharp_edges(*m_CGALmesh, 15.0, edge_is_sharp);
-
-		//CGALpmp::isotropic_remeshing(faces(*m_CGALmesh), target_edge_length, *m_CGALmesh,
-		//	CGAL::parameters::number_of_iterations(nb_iter)
-		//	.edge_is_constrained_map(edge_is_sharp)
-		//	.protect_constraints(true)); //i.e. protect border, here
-
-		//CGAL::IO::write_polygon_mesh("remeshed.obj", *m_CGALmesh, CGAL::parameters::stream_precision(17));
-		//std::shared_ptr<Mesh> remeshedMesh = std::make_shared<Mesh>("Remeshed Result", "remeshed.obj");
-
-		////m_CGALmesh->collect_garbage();
-		////std::shared_ptr<Mesh> remeshedMesh = FormatTool::CGALMeshToMesh(m_CGALmesh, glm::mat4(1.0f));
-		////remeshedMesh->SetName("Remeshed Result");
-
-		//// Show remesh result.
-		//m_Scene->AddMesh(remeshedMesh);
-		//remeshedMesh->GetPsMesh()->setEnabled(false);
-
-		//std::tie(m_GCTmesh, m_GCTgeo) = FormatTool::MeshToGCTMesh(remeshedMesh);
 		std::tie(m_GCTmesh, m_GCTgeo) = FormatTool::MeshToGCTMesh(mesh);
 
 		// Construct a shortest path query object and add a source point

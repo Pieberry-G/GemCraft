@@ -13,8 +13,6 @@
 
 #include "Tools/DatasetBuilder.h"
 
-#include <polyscope/polyscope.h>
-
 namespace GemCraft {
 
 	Application* Application::s_Instance = nullptr;
@@ -40,7 +38,7 @@ namespace GemCraft {
 
         polyscope::state::edgeLengthScale = 0.3;
 
-        m_Scene = std::make_shared<Scene>();
+        m_Scene = std::make_unique<Scene>();
 
         //Tools::DatasetBuilder builder;
         //builder.BuildDataset();
@@ -48,26 +46,6 @@ namespace GemCraft {
 
 	void Application::Run()
     {
-        //m_Scene->AddRing("Gem", "../assets/meshes/BlenderExport/BezelSettingDemo.obj");
-
-        //const std::string filepath = "../assets/meshes/Gen/gen003/gen003.obj";
-        //GC_CORE_WARN("Loading ring file: {0}", filepath);
-        //m_Scene->AddRing("Ring", filepath);
-
-        //m_Scene->CleanSurface();
-
-        //if(1)
-        //    m_Scene->AutoRecognizeGems();
-        //else
-        //    m_Scene->AutoSelectRegion();
-
-
-        //// Get indices for element picking
-        //std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
-        //polyscope::state::facePickIndStart = ring->nVertices();
-        //polyscope::state::edgePickIndStart = polyscope::state::facePickIndStart + ring->nFaces();
-        //polyscope::state::halfedgePickIndStart = polyscope::state::edgePickIndStart + ring->nEdges();
-
         // Give control to the polyscope gui
         polyscope::show();
 	}

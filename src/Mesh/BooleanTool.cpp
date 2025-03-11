@@ -8,20 +8,6 @@
 
 namespace GemCraft {
 
-	struct HalfedgeToEdge
-	{
-		HalfedgeToEdge(const CGALMesh& cgalmesh, std::vector<edge_descriptor>& edges)
-			: m_CGALmesh(cgalmesh), m_Edges(edges) {}
-
-		void operator()(const halfedge_descriptor& h) const
-		{
-			m_Edges.push_back(edge(h, m_CGALmesh));
-		}
-
-		const CGALMesh& m_CGALmesh;
-		std::vector<edge_descriptor>& m_Edges;
-	};
-
 	std::shared_ptr<Mesh> BooleanTool::DifferenceOperation(std::shared_ptr<Mesh>& ring, std::shared_ptr<Mesh>& meshToSubtract)
 	{
 		glm::mat4 transform = ring->GetPsTransform();
@@ -32,18 +18,6 @@ namespace GemCraft {
 		Exact_vertex_point_map mesh1Vpm(mesh1ExactPoints, *mesh1);
 
 		std::shared_ptr<CGALMesh> mesh2 = FormatTool::MeshToCGALMesh(meshToSubtract, meshToSubtract->GetPsTransform());
-
-		double targetEdgeLength = 0.1;
-
-		std::vector<edge_descriptor> border;
-		CGALpmp::border_halfedges(faces(*mesh2), *mesh2, boost::make_function_output_iterator(HalfedgeToEdge(*mesh2, border)));
-		CGALpmp::split_long_edges(border, targetEdgeLength, *mesh2);
-
-		CGALpmp::isotropic_remeshing(faces(*mesh2), targetEdgeLength, *mesh2,
-			CGAL::parameters::number_of_iterations(10)
-			.protect_constraints(true));
-		mesh2->collect_garbage();
-
 		Exact_point_map mesh2ExactPoints = mesh2->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
 		Exact_vertex_point_map mesh2Vpm(mesh2ExactPoints, *mesh2);
 
@@ -52,7 +26,6 @@ namespace GemCraft {
 			CGALparams::vertex_point_map(mesh2Vpm),
 			CGALparams::vertex_point_map(mesh1Vpm));
 		mesh1->collect_garbage();
-
 
 		if (success) {
 			GC_CORE_INFO("Difference was successfully computed.");

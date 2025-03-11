@@ -46,7 +46,7 @@ namespace GemCraft {
 	class GeodesicTool
 	{
 	public:
-		GeodesicTool(std::shared_ptr<Mesh>& mesh, Scene* scene);
+		GeodesicTool(std::shared_ptr<Mesh>& mesh);
 
 		Face_location LocatePoint(CGALPoint point);
 		glm::vec3 CalculateNormal(const glm::vec3& position);

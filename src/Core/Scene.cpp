@@ -88,7 +88,7 @@ namespace GemCraft {
 
 	void Scene::InitGeodesic()
 	{
-		m_GeodesicTool = std::make_unique<GeodesicTool>(m_Ring, this);
+		m_GeodesicTool = std::make_unique<GeodesicTool>(m_Ring);
 	}
 
 	void Scene::AddRing(const std::string& name, const std::string& filepath)
@@ -123,19 +123,17 @@ namespace GemCraft {
 
 		InitGeodesic();
 		m_PlacementTool->BuildSubmeshForSelectedRegion();
-		m_PlacementTool->ParameterizeSubmesh();
-		m_PlacementTool->CalculateGeodesicDistance();
 		m_PlacementTool->ShowResult();
 	}
 
 	void Scene::DigHoleOnSelectedRegion()
 	{
-		m_PlacementTool->CreateMeshForBooleanHole();
+		std::shared_ptr<Mesh> booleanMesh = m_PlacementTool->CreateMeshForBooleanHole();
 		m_PlacementTool->ShowBooleanMesh();
 
 		glm::mat4 transform = m_Ring->GetPsTransform();
 		m_Ring->RemoveFromPolyscope();
-		m_Ring = m_BooleanTool->DifferenceOperation(m_Ring, m_PlacementTool->GetBooleanMesh());
+		m_Ring = m_BooleanTool->DifferenceOperation(m_Ring, booleanMesh);
 		m_Ring->SetName("Ring");
 		m_Ring->AddToPolyscope(transform);
 	}

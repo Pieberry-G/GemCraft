@@ -42,7 +42,6 @@ namespace GemCraft {
 			}
 		}
 
-
 	private:
 		void AutoSelectRegion();
 		void RepairSelectedRegion();
