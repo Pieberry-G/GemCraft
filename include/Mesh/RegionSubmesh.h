@@ -30,6 +30,7 @@ typedef Kernel::Vector_3										         CGALVector;
 typedef CGAL::Surface_mesh<CGALPoint>							         CGALMesh;
 
 typedef boost::graph_traits<CGALMesh>::vertex_descriptor		         vertex_descriptor;
+typedef boost::graph_traits<CGALMesh>::edge_descriptor					 edge_descriptor;
 typedef boost::graph_traits<CGALMesh>::halfedge_descriptor		         halfedge_descriptor;
 typedef boost::graph_traits<CGALMesh>::face_descriptor			         face_descriptor;
 
@@ -45,10 +46,10 @@ namespace CGALsmp = CGAL::Surface_mesh_parameterization;
 
 namespace GemCraft {
 
-	class PlacementSubmesh
+	class RegionSubmesh
 	{
 	public:
-		PlacementSubmesh(std::shared_ptr<Mesh>& mesh, MeshSubset selectedRegion);
+		RegionSubmesh(std::shared_ptr<Mesh>& mesh, MeshSubset selectedRegion);
 
 		std::vector<glm::vec2> GetBoundary();
 		std::vector<glm::vec3> Map2DPointsTo3D(std::vector<glm::vec2>& points);

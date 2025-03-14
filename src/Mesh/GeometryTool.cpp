@@ -9,9 +9,6 @@ namespace GemCraft {
 
     static bool IsSmallHole(halfedge_descriptor h, std::shared_ptr<CGALMesh>& cgalmesh, double maxHoleDiam, int maxNumHoleEdges);
     static std::set<CGAL::SM_Face_index> FindNRingFaces(std::shared_ptr<CGALMesh>& cgalmesh, CGAL::SM_Face_index queryFace, uint32_t nRing);
-    static std::set<vertex_descriptor> FindBoundaryVertices(CGALMesh& cgalmesh, MeshSubset& subset);
-    static std::set<halfedge_descriptor> FindBoundaryEdges(CGALMesh& cgalmesh, MeshSubset& subset);
-    static std::set<face_descriptor> FindBoundaryFaces(CGALMesh& cgalmesh, MeshSubset& subset);
 
     void GeometryTool::Clean()
     {
@@ -204,48 +201,6 @@ namespace GemCraft {
             faceQueue.pop();
         }
         return result;
-    }
-
-    static std::set<vertex_descriptor> FindBoundaryVertices(CGALMesh& cgalmesh, MeshSubset& subset) {
-        std::set<vertex_descriptor> boundaryVertices;
-        for (auto face : subset.Faces()) {
-            for (auto he : halfedges_around_face(cgalmesh.halfedge(face_descriptor(face)), cgalmesh)) {
-                auto oppositeFace = cgalmesh.face(cgalmesh.opposite(he));
-                if (subset.Faces().find(oppositeFace) == subset.Faces().end()) {
-                    boundaryVertices.insert(cgalmesh.target(he));
-                    break;
-                }
-            }
-        }
-        return boundaryVertices;
-    }
-
-    static std::set<halfedge_descriptor> FindBoundaryEdges(CGALMesh& cgalmesh, MeshSubset& subset) {
-        std::set<halfedge_descriptor> boundaryEdges;
-        for (auto face : subset.Faces()) {
-            for (auto he : halfedges_around_face(cgalmesh.halfedge(face_descriptor(face)), cgalmesh)) {
-                auto oppositeFace = cgalmesh.face(cgalmesh.opposite(he));
-                if (subset.Faces().find(oppositeFace) == subset.Faces().end()) {
-                    boundaryEdges.insert(he);
-                    break;
-                }
-            }
-        }
-        return boundaryEdges;
-    }
-
-    static std::set<face_descriptor> FindBoundaryFaces(CGALMesh& cgalmesh, MeshSubset& subset) {
-        std::set<face_descriptor> boundaryFaces;
-        for (auto face : subset.Faces()) {
-            for (auto he : halfedges_around_face(cgalmesh.halfedge(face_descriptor(face)), cgalmesh)) {
-                auto oppositeFace = cgalmesh.face(cgalmesh.opposite(he));
-                if (subset.Faces().find(oppositeFace) == subset.Faces().end()) {
-                    boundaryFaces.insert(face_descriptor(face));
-                    break;
-                }
-            }
-        }
-        return boundaryFaces;
     }
 
 } // namespace GemCraft

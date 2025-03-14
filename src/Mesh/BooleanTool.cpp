@@ -161,19 +161,19 @@ namespace GemCraft {
 				CGALparams::vertex_point_map(mesh2Vpm));
 		}
 
-		// Mandrels
-		for (size_t i = 0; i < gems.size(); i++) {
-			std::shared_ptr<Mesh> mandrel = ResourceManager::Get()->CreateMandrel();
-			std::shared_ptr<CGALMesh> mesh3 = FormatTool::MeshToCGALMesh(mandrel, gems[i]->GetPsTransform());
+		//// Mandrels
+		//for (size_t i = 0; i < gems.size(); i++) {
+		//	std::shared_ptr<Mesh> mandrel = ResourceManager::Get()->CreateMandrel();
+		//	std::shared_ptr<CGALMesh> mesh3 = FormatTool::MeshToCGALMesh(mandrel, gems[i]->GetPsTransform());
 
-			Exact_point_map mesh3ExactPoints = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
-			Exact_vertex_point_map mesh3Vpm(mesh3ExactPoints, *mesh3);
+		//	Exact_point_map mesh3ExactPoints = mesh3->add_property_map<vertex_descriptor, ExactKernel::Point_3>("v:exact_point").first;
+		//	Exact_vertex_point_map mesh3Vpm(mesh3ExactPoints, *mesh3);
 
-			CGALpmp::corefine_and_compute_union(*mesh2, *mesh3, *mesh2,
-				CGALparams::vertex_point_map(mesh2Vpm),
-				CGALparams::vertex_point_map(mesh3Vpm),
-				CGALparams::vertex_point_map(mesh2Vpm));
-		}
+		//	CGALpmp::corefine_and_compute_union(*mesh2, *mesh3, *mesh2,
+		//		CGALparams::vertex_point_map(mesh2Vpm),
+		//		CGALparams::vertex_point_map(mesh3Vpm),
+		//		CGALparams::vertex_point_map(mesh2Vpm));
+		//}
 
 		// GemSettings
 		for (size_t i = 0; i < gemSettings.size(); i++) {
@@ -205,10 +205,47 @@ namespace GemCraft {
 		return FormatTool::CGALMeshToMesh(mesh1, inverseTransform);
 	}
 
+	struct HalfedgeToEdge
+	{
+		HalfedgeToEdge(const CGALMesh& cgalmesh, std::vector<edge_descriptor>& edges)
+			: m_CGALmesh(cgalmesh), m_Edges(edges) {}
+
+		void operator()(const halfedge_descriptor& h) const
+		{
+			m_Edges.push_back(edge(h, m_CGALmesh));
+		}
+
+		const CGALMesh& m_CGALmesh;
+		std::vector<edge_descriptor>& m_Edges;
+	};
+
 	std::shared_ptr<CGALMesh> BooleanTool::ConstructContexHull(std::shared_ptr<CGALMesh> mesh)
 	{
 		std::shared_ptr<CGALMesh> contexHull = std::make_shared<CGALMesh>();
 		CGAL::convex_hull_3(mesh->points().begin(), mesh->points().end(), *contexHull);
+
+		//auto vnormals = contexHull->add_property_map<vertex_descriptor, CGALVector>("v:normal", CGAL::NULL_VECTOR).first;
+		//CGALpmp::compute_vertex_normals(*contexHull, vnormals);
+
+		//for (auto& vertex : contexHull->vertices())
+		//{
+		//	CGALPoint& point = contexHull->point(vertex);
+		//	CGALVector normal = vnormals[vertex];
+		//	point = point + normal * 1.0f;
+		//}
+
+		//double targetEdgeLength = 0.1;
+		//std::vector<edge_descriptor> border;
+		//CGALpmp::border_halfedges(faces(*contexHull), *contexHull, boost::make_function_output_iterator(HalfedgeToEdge(*contexHull, border)));
+		//CGALpmp::split_long_edges(border, targetEdgeLength, *contexHull);
+		//CGALpmp::isotropic_remeshing(faces(*contexHull), targetEdgeLength, *contexHull,
+		//	CGAL::parameters::number_of_iterations(10)
+		//	.protect_constraints(true));
+		//contexHull->collect_garbage();
+
+		//std::ofstream out("contexHull.obj");
+		//CGAL::IO::write_OBJ(out, *contexHull);
+		//out.close();
 
 		return contexHull;
 	}

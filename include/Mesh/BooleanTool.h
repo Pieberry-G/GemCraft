@@ -8,10 +8,12 @@
 
 #include <CGAL/Polygon_mesh_processing/corefinement.h>
 #include <CGAL/convex_hull_3.h>
+#include <CGAL/Polygon_mesh_processing/compute_normal.h>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel					Kernel;
 typedef CGAL::Exact_predicates_exact_constructions_kernel					ExactKernel;
 typedef Kernel::Point_3														CGALPoint;
+typedef Kernel::Vector_3													CGALVector;
 typedef CGAL::Surface_mesh<CGALPoint>										CGALMesh;
 
 typedef boost::graph_traits<CGALMesh>::vertex_descriptor					vertex_descriptor;

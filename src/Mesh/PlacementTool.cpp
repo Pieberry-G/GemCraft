@@ -16,7 +16,7 @@ namespace GemCraft {
 	void PlacementTool::BuildSubmeshForSelectedRegion()
 	{
 		std::shared_ptr<Mesh>& ring = m_Scene->GetRing();
-		m_Submesh = std::make_shared<PlacementSubmesh>(ring, polyscope::state::selectedRegion);
+		m_Submesh = std::make_shared<RegionSubmesh>(ring, polyscope::state::selectedRegion);
 	}
 
 	std::shared_ptr<Mesh> PlacementTool::CreateMeshForBooleanHole()
@@ -50,7 +50,7 @@ namespace GemCraft {
 			shrinkLength = 0.1f * cellRadius;
 		}
 		if (gemPatternUI.GetCurSelectedPackingMode() == PackingMode::Hexagonal) {
-			targetPoints = packing2D.GenerateHexagonalPacking(cellRadius, gridRotation, boundary, shrinkLength);
+			targetPoints = packing2D.GenerateHexagonalPacking(cellRadius, gridRotation, boundary, 0.0f);
 		}
 		else if (gemPatternUI.GetCurSelectedPackingMode() == PackingMode::Square) {
 			targetPoints = packing2D.GenerateSquarePacking(cellRadius, gridRotation, boundary, shrinkLength);

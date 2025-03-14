@@ -1,4 +1,4 @@
-#include "Mesh/PlacementSubmesh.h"
+#include "Mesh/RegionSubmesh.h"
 
 #include "Mesh/FormatTool.h"
 #include "Mesh/GeodesicTool.h"
@@ -21,14 +21,14 @@ namespace GemCraft {
 
 	static double ComputeSignedArea(const std::vector<CGALPoint2>& polygon);
 
-	PlacementSubmesh::PlacementSubmesh(std::shared_ptr<Mesh>& mesh, MeshSubset selectedRegion)
+	RegionSubmesh::RegionSubmesh(std::shared_ptr<Mesh>& mesh, MeshSubset selectedRegion)
 	{
 		BuildSubmesh(mesh, selectedRegion);
 		ParameterizeSubmesh();
 		CalculateGeodesicDistance();
 	}
 
-	std::vector<glm::vec2> PlacementSubmesh::GetBoundary()
+	std::vector<glm::vec2> RegionSubmesh::GetBoundary()
 	{
 		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(m_Submesh, m_Submesh->GetPsTransform());
 		std::vector<glm::vec2> boundary;
@@ -40,7 +40,7 @@ namespace GemCraft {
 		return boundary;
 	}
 
-	std::vector<glm::vec3> PlacementSubmesh::Map2DPointsTo3D(std::vector<glm::vec2>& points)
+	std::vector<glm::vec3> RegionSubmesh::Map2DPointsTo3D(std::vector<glm::vec2>& points)
 	{
 		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(m_Submesh, m_Submesh->GetPsTransform());
 		Triangulation t;
@@ -67,7 +67,7 @@ namespace GemCraft {
 		return positions;
 	}
 
-	std::shared_ptr<Mesh>& PlacementSubmesh::CreateMeshForBooleanHole(float holeDepth, float shrinkLength)
+	std::shared_ptr<Mesh>& RegionSubmesh::CreateMeshForBooleanHole(float holeDepth, float shrinkLength)
 	{
 		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(m_Submesh, m_Submesh->GetPsTransform());
 		GeodesicTool submeshGeodesic(m_Submesh);
@@ -122,7 +122,7 @@ namespace GemCraft {
 		return m_BooleanMesh;
 	}
 
-	void PlacementSubmesh::BuildSubmesh(std::shared_ptr<Mesh>& mesh, MeshSubset selectedRegion)
+	void RegionSubmesh::BuildSubmesh(std::shared_ptr<Mesh>& mesh, MeshSubset selectedRegion)
 	{
 		GC_CORE_WARN("Building submesh.");
 
@@ -143,7 +143,7 @@ namespace GemCraft {
 		GC_CORE_INFO("Completed!");
 	}
 
-	void PlacementSubmesh::ParameterizeSubmesh()
+	void RegionSubmesh::ParameterizeSubmesh()
 	{
 		GC_CORE_WARN("Parameterizing submesh.");
 
@@ -162,7 +162,7 @@ namespace GemCraft {
 		GC_CORE_INFO("Completed!");
 	}
 
-	void PlacementSubmesh::CalculateGeodesicDistance()
+	void RegionSubmesh::CalculateGeodesicDistance()
 	{
 		GC_CORE_WARN("Calculating geodesic distance.");
 
@@ -182,7 +182,7 @@ namespace GemCraft {
 		GC_CORE_INFO("Completed!");
 	}
 
-	std::vector<glm::vec3> PlacementSubmesh::ExtractBooleanMeshBoundary(float shrinkLength)
+	std::vector<glm::vec3> RegionSubmesh::ExtractBooleanMeshBoundary(float shrinkLength)
 	{
 		std::shared_ptr<CGALMesh> cgalSubmesh = FormatTool::MeshToCGALMesh(m_Submesh, m_Submesh->GetPsTransform());
 
@@ -284,7 +284,7 @@ namespace GemCraft {
 		return sortedVertices;
 	}
 
-	void PlacementSubmesh::ShowResult(Scene* scene)
+	void RegionSubmesh::ShowResult(Scene* scene)
 	{
 		// Submesh
 		{
@@ -307,7 +307,7 @@ namespace GemCraft {
 		}
 	}
 
-	void PlacementSubmesh::ShowBooleanMesh(Scene* scene)
+	void RegionSubmesh::ShowBooleanMesh(Scene* scene)
 	{
 		// Boolean mesh
 		{

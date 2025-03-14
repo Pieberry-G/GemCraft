@@ -11,6 +11,7 @@
 typedef CGAL::Exact_predicates_inexact_constructions_kernel     Kernel;
 typedef Kernel::Point_3                                         CGALPoint;
 typedef CGAL::Surface_mesh<CGALPoint>                           CGALMesh;
+
 typedef boost::graph_traits<CGALMesh>::halfedge_descriptor      halfedge_descriptor;
 typedef boost::graph_traits<CGALMesh>::edge_descriptor          edge_descriptor;
 typedef boost::graph_traits<CGALMesh>::face_descriptor          face_descriptor;

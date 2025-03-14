@@ -3,7 +3,7 @@
 #include "Mesh/Mesh.h"
 #include "Mesh/Path.h"
 #include "Mesh/GemGroup.h"
-#include "Mesh/PlacementSubmesh.h"															        
+#include "Mesh/RegionSubmesh.h"															        
 
 namespace GemCraft {
 
@@ -57,7 +57,7 @@ namespace GemCraft {
 		GemGroup PlaceGemsOnPositions(const std::vector<glm::vec3>& positions);
 
 	private:
-		std::shared_ptr<PlacementSubmesh> m_Submesh;
+		std::shared_ptr<RegionSubmesh> m_Submesh;
 
 	private:
 		Scene* m_Scene;

@@ -113,7 +113,7 @@ namespace GemCraft {
         ImGui::InputFloat("Gem Exposure Length", &m_GemExposureLength, 0.1f, 0.0f, "%.2f");
         ImGui::Separator();
 
-        std::vector<PackingMode> modes{ PackingMode::Hexagonal, PackingMode::Square, PackingMode::Compact };
+        std::vector<PackingMode> modes{ PackingMode::Hexagonal, PackingMode::Square };
         std::string name = GetName(m_CurSelectedPackingMode);
         if (ImGui::BeginCombo("Packing Mode", name.c_str())) {
             ImGui::SetItemDefaultFocus();
