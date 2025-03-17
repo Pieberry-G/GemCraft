@@ -241,7 +241,7 @@ namespace GemCraft {
 				if (visited.find(i) == visited.end()) {
 					float dis0 = glm::distance(endPoint, positions[edgeInds[i][0]]);
 					float dis1 = glm::distance(endPoint, positions[edgeInds[i][1]]);
-					if (min(dis0, dis1) < minDistance) {
+					if (std::min(dis0, dis1) < minDistance) {
 						if (dis0 <= dis1) {
 							minDistance = dis0;
 							targetEdge = i;

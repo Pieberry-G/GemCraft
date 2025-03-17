@@ -41,19 +41,5 @@ namespace FormatTool {
 		return std::make_shared<Mesh>("", vertices, faces);
 	}
 
-	std::tuple<std::unique_ptr<GCTsf::ManifoldSurfaceMesh>, std::unique_ptr<GCTsf::VertexPositionGeometry>>
-		MeshToGCTMesh(const std::shared_ptr<Mesh>& mesh)
-	{
-		std::vector<std::vector<size_t>> faces;
-		std::vector<GCT::Vector3> vertices;
-		glm::mat4 transform = mesh->GetPsTransform();
-		for (const auto& p : mesh->GetVertices()) {
-			glm::vec4 p_tf = transform * glm::vec4(p, 1.0f);
-			vertices.push_back({ p_tf.x, p_tf.y, p_tf.z });
-		}
-		faces = mesh->GetFaces();
-		return GCTsf::makeManifoldSurfaceMeshAndGeometry(faces, vertices);
-	}
-
 } // namespace FormatTool
 } // namespace GemCraft

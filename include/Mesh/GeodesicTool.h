@@ -16,10 +16,6 @@
 #include <CGAL/Polygon_mesh_processing/corefinement.h>
 #include <CGAL/convex_hull_3.h>
 
-#include <geometrycentral/surface/meshio.h>
-#include <geometrycentral/surface/surface_point.h>
-#include <geometrycentral/surface/trace_geodesic.h>
-
 typedef CGAL::Exact_predicates_inexact_constructions_kernel				Kernel;
 typedef Kernel::Point_3													CGALPoint;
 typedef CGAL::Surface_mesh<CGALPoint>									CGALMesh;
@@ -37,8 +33,6 @@ typedef CGAL::AABB_traits_3<Kernel, AABB_face_graph_primitive>			AABB_face_graph
 typedef CGAL::AABB_tree<AABB_face_graph_traits>                         AABB_tree;
 
 namespace CGALpmp = CGAL::Polygon_mesh_processing;
-namespace GCT = geometrycentral;
-namespace GCTsf = geometrycentral::surface;
 
 namespace GemCraft {
 
@@ -50,15 +44,11 @@ namespace GemCraft {
 
 		Face_location LocatePoint(CGALPoint point);
 		glm::vec3 CalculateNormal(const glm::vec3& position);
-		glm::vec3 TracePath(Face_location loc, const glm::vec3& forward, float distance);
 
 		Path ConstructGeodesicPath();
-		std::vector<Path> CalculateParallelPaths(const Path& path, int numberOfPaths, float pathSpacing);
 
 	private:
 		std::shared_ptr<CGALMesh> m_CGALmesh;
-		std::unique_ptr<GCTsf::ManifoldSurfaceMesh> m_GCTmesh;
-		std::unique_ptr<GCTsf::VertexPositionGeometry> m_GCTgeo;
 
 		std::unique_ptr<Surface_mesh_shortest_path> m_ShortestPaths;
 		AABB_tree m_Tree;

@@ -1,8 +1,8 @@
-# Build directories
 build/
 
 dataIO/
 
-Dataset/
+assets/Dataset/
 
-*.pth
+deps/sam-adapter/pretrained/
+deps/PCL 1.14.0/
