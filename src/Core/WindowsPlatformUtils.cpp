@@ -1,6 +1,6 @@
 #include "Core/WindowsPlatformUtils.h"
 
-#include "Core/Application.h"
+#include <polyscope/polyscope.h>
 
 #include <commdlg.h>
 #include <GLFW/glfw3.h>

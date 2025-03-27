@@ -1,60 +1,46 @@
 #pragma once
 
 #include "Mesh/Mesh.h"
-#include "Mesh/Path.h"
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
-#include <CGAL/Polygon_mesh_processing/detect_features.h>
-#include <CGAL/Polygon_mesh_processing/remesh.h>
 
-#include <CGAL/Surface_mesh_shortest_path.h>
-#include <CGAL/AABB_face_graph_triangle_primitive.h>
-#include <CGAL/AABB_traits_3.h>
 #include <CGAL/AABB_tree.h>
-
-#include <CGAL/Polygon_mesh_processing/corefinement.h>
-#include <CGAL/convex_hull_3.h>
+#include <CGAL/AABB_traits_3.h>
+#include <CGAL/AABB_face_graph_triangle_primitive.h>
+#include <CGAL/Surface_mesh_shortest_path.h>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel				Kernel;
 typedef Kernel::Point_3													CGALPoint;
 typedef CGAL::Surface_mesh<CGALPoint>									CGALMesh;
 
-typedef boost::graph_traits<CGALMesh>::edge_descriptor					edge_descriptor;
-typedef boost::graph_traits<CGALMesh>::halfedge_descriptor				halfedge_descriptor;
+typedef boost::graph_traits<CGALMesh>::face_descriptor			        face_descriptor;
 
 typedef CGAL::Surface_mesh_shortest_path_traits<Kernel, CGALMesh>		Traits;
 typedef CGAL::Surface_mesh_shortest_path<Traits>						Surface_mesh_shortest_path;
 typedef boost::graph_traits<CGALMesh>::face_iterator					face_iterator;
 
-typedef typename Surface_mesh_shortest_path::Face_location              Face_location;
 typedef CGAL::AABB_face_graph_triangle_primitive<CGALMesh>				AABB_face_graph_primitive;
 typedef CGAL::AABB_traits_3<Kernel, AABB_face_graph_primitive>			AABB_face_graph_traits;
 typedef CGAL::AABB_tree<AABB_face_graph_traits>                         AABB_tree;
 
-namespace CGALpmp = CGAL::Polygon_mesh_processing;
-
 namespace GemCraft {
 
-	class Scene;
 	class GeodesicTool
 	{
 	public:
 		GeodesicTool(std::shared_ptr<Mesh>& mesh);
 
-		Face_location LocatePoint(CGALPoint point);
+		size_t QueryClosestFace(const glm::vec3& queryPoint);
+		std::array<double, 3> QueryBarycentricCoords(const glm::vec3& queryPoint);
+		glm::vec3 QueryClosestPoint(const glm::vec3& queryPoint);
 		glm::vec3 CalculateNormal(const glm::vec3& position);
-
-		Path ConstructGeodesicPath();
 
 	private:
 		std::shared_ptr<CGALMesh> m_CGALmesh;
 
 		std::unique_ptr<Surface_mesh_shortest_path> m_ShortestPaths;
 		AABB_tree m_Tree;
-
-	private:
-		Scene* m_Scene;
 	};
 
 } // namespace GemCraft

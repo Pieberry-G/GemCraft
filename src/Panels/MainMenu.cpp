@@ -3,8 +3,6 @@
 #include "Core/Application.h"
 #include "Core/WindowsPlatformUtils.h"
 #include "Mesh/Mesh.h"
-#include "EventSystem/Input.h"
-#include "EventSystem/ApplicationEvent.h"
 
 #include <polyscope/polyscope.h>
 #include <imgui.h>
@@ -90,20 +88,20 @@ namespace GemCraft {
     {
         std::string filepath = FileDialogs::OpenFile("AI Generated Mesh (*.obj)\0*.obj\0");
         if (!filepath.empty()) {
-           std::unique_ptr<Scene>& scene = Application::Get()->GetScene();
-           scene->Clean();
+            std::unique_ptr<Scene>& scene = Application::Get()->GetScene();
+            scene->Clean();
 
-           GC_CORE_WARN("Loading ring file: {0}", filepath);
-           scene->AddRing("Ring", filepath);
+            GC_CORE_WARN("Loading ring file: {0}", filepath);
+            scene->AddRing("Ring", filepath);
 
-           // Get indices for element picking
-           std::shared_ptr<Mesh>& ring = scene->GetRing();
-           polyscope::state::facePickIndStart = ring->nVertices();
-           polyscope::state::edgePickIndStart = polyscope::state::facePickIndStart + ring->nFaces();
-           polyscope::state::halfedgePickIndStart = polyscope::state::edgePickIndStart + ring->nEdges();
+            // Get indices for element picking
+            std::shared_ptr<Mesh>& ring = scene->GetRing();
+            polyscope::state::facePickIndStart = ring->nVertices();
+            polyscope::state::edgePickIndStart = polyscope::state::facePickIndStart + ring->nFaces();
+            polyscope::state::halfedgePickIndStart = polyscope::state::edgePickIndStart + ring->nEdges();
 
-           polyscope::view::resetCameraToHomeView();
-       }
+            polyscope::view::resetCameraToHomeView();
+        }
     }
 
     static void WriteMeshWithOffset(std::shared_ptr<Mesh>& mesh, const std::string& name, std::ofstream& out, int& vertexOffset)

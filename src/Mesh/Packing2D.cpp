@@ -8,7 +8,7 @@ namespace GemCraft {
 	static size_t FindClosestEdge(const glm::vec2& point, const std::vector<glm::vec2>& boundary);
 	static std::vector<glm::vec2> AdjustCircles(const std::vector<glm::vec2>& circles, float cellRadius, const std::vector<glm::vec2>& boundary, float shrinkLength);
 
-	std::vector<glm::vec2> Packing2D::GenerateSquarePacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength)
+	std::vector<glm::vec2> Packing2D::GenerateSquarePacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary2D, float shrinkLength)
 	{
 		std::vector<glm::vec2> points;
 		float dx = 2 * cellRadius;	// horizontal spacing
@@ -16,7 +16,7 @@ namespace GemCraft {
 		float cosTheta = std::cos(gridRotation);
 		float sinTheta = std::sin(gridRotation);
 
-		auto [center, boundingRadius] = CalculateBoundingCircle(boundary);
+		auto [center, boundingRadius] = CalculateBoundingCircle(boundary2D);
 		int gridStep = 2.0 * boundingRadius / cellRadius;
 		for (int i = -gridStep; i <= gridStep; i++) {
 			for (int j = -gridStep; j <= gridStep; j++) {
@@ -28,10 +28,10 @@ namespace GemCraft {
 			}
 		}
 
-		return ClipPointsToBoundary(points, cellRadius + shrinkLength, boundary);
+		return ClipPointsToBoundary(points, cellRadius + shrinkLength, boundary2D);
 	}
 
-	std::vector<glm::vec2> Packing2D::GenerateHexagonalPacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength)
+	std::vector<glm::vec2> Packing2D::GenerateHexagonalPacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary2D, float shrinkLength)
 	{
 		std::vector<glm::vec2> points;
 		float dx = cellRadius * sqrt(3) * 2.0f;	// horizontal spacing
@@ -39,7 +39,7 @@ namespace GemCraft {
 		float cosTheta = std::cos(gridRotation);
 		float sinTheta = std::sin(gridRotation);
 
-		auto [center, boundingRadius] = CalculateBoundingCircle(boundary);
+		auto [center, boundingRadius] = CalculateBoundingCircle(boundary2D);
 		int gridStep = 2.0 * boundingRadius / cellRadius;
 		for (int i = -gridStep; i <= gridStep; i++) {
 			for (int j = -gridStep; j <= gridStep; j++) {
@@ -54,10 +54,10 @@ namespace GemCraft {
 			}
 		}
  
-		return ClipPointsToBoundary(points, cellRadius + shrinkLength, boundary);
+		return ClipPointsToBoundary(points, cellRadius + shrinkLength, boundary2D);
 	}
 
-	std::vector<glm::vec2> Packing2D::GenerateCompactPackingOld(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength, float packingEdgeLoopDensity, float packingCenterDensity)
+	std::vector<glm::vec2> Packing2D::GenerateCompactPackingOld(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary2D, float shrinkLength, float packingEdgeLoopDensity, float packingCenterDensity)
 	{
 		std::vector<glm::vec2> points;
 		float dx = (1.0f / packingCenterDensity) * cellRadius * sqrt(3) * 2.0f;	// horizontal spacing
@@ -65,7 +65,7 @@ namespace GemCraft {
 		float cosTheta = std::cos(gridRotation);
 		float sinTheta = std::sin(gridRotation);
 
-		auto [center, boundingRadius] = CalculateBoundingCircle(boundary);
+		auto [center, boundingRadius] = CalculateBoundingCircle(boundary2D);
 		int gridStep = 2.0 * boundingRadius / ((1.0f / packingCenterDensity) * cellRadius);
 		for (int i = -gridStep; i <= gridStep; i++) {
 			for (int j = -gridStep; j <= gridStep; j++) {
@@ -80,12 +80,12 @@ namespace GemCraft {
 			}
 		}
 
-		points = ClipPointsToBoundary(points, cellRadius + shrinkLength, boundary);
-		points = AdjustCircles(points, cellRadius, boundary, shrinkLength);
+		points = ClipPointsToBoundary(points, cellRadius + shrinkLength, boundary2D);
+		points = AdjustCircles(points, cellRadius, boundary2D, shrinkLength);
 		return points;
 	}
 
-	std::vector<glm::vec2> Packing2D::GenerateCompactPacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength, float packingEdgeLoopDensity, float packingCenterDensity)
+	std::vector<glm::vec2> Packing2D::GenerateCompactPacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary2D, float shrinkLength, float packingEdgeLoopDensity, float packingCenterDensity)
 	{
 		std::vector<glm::vec2> points;
 		float dx = (1.0f / packingCenterDensity) * cellRadius * sqrt(3) * 2.0f;	// horizontal spacing
@@ -93,7 +93,7 @@ namespace GemCraft {
 		float cosTheta = std::cos(gridRotation);
 		float sinTheta = std::sin(gridRotation);
 
-		auto [center, boundingRadius] = CalculateBoundingCircle(boundary);
+		auto [center, boundingRadius] = CalculateBoundingCircle(boundary2D);
 		int gridStep = 2.0 * boundingRadius / ((1.0f / packingCenterDensity) * cellRadius);
 		for (int i = -gridStep; i <= gridStep; i++) {
 			for (int j = -gridStep; j <= gridStep; j++) {
@@ -108,12 +108,12 @@ namespace GemCraft {
 			}
 		}
 
-		points = ClipPointsToBoundary(points, cellRadius + shrinkLength + cellRadius, boundary);
+		points = ClipPointsToBoundary(points, cellRadius + shrinkLength + cellRadius, boundary2D);
 
 		float perimeter = 0.0f;
-		for (size_t i = 0; i < boundary.size(); ++i) {
-			glm::vec2 a = boundary[i];
-			glm::vec2 b = boundary[(i + 1) % boundary.size()];
+		for (size_t i = 0; i < boundary2D.size(); ++i) {
+			glm::vec2 a = boundary2D[i];
+			glm::vec2 b = boundary2D[(i + 1) % boundary2D.size()];
 			perimeter += glm::length(b - a);
 		}
 		float spacing = 2 * cellRadius * (1.0f / packingEdgeLoopDensity);
@@ -123,9 +123,9 @@ namespace GemCraft {
 			float targetLength = (i * spacing) + cellRadius;
 			float accumulatedLength = 0.0f;
 			while (accumulatedLength < targetLength) {
-				for (size_t j = 0; j < boundary.size(); ++j) {
-					glm::vec2 a = boundary[j];
-					glm::vec2 b = boundary[(j + 1) % boundary.size()];
+				for (size_t j = 0; j < boundary2D.size(); ++j) {
+					glm::vec2 a = boundary2D[j];
+					glm::vec2 b = boundary2D[(j + 1) % boundary2D.size()];
 					float segmentLength = glm::length(b - a);
 					if (accumulatedLength + segmentLength >= targetLength) {
 						float t = (targetLength - accumulatedLength) / segmentLength;
@@ -144,7 +144,7 @@ namespace GemCraft {
 			}
 		}
 
-		points = AdjustCircles(points, cellRadius, boundary, shrinkLength);
+		points = AdjustCircles(points, cellRadius, boundary2D, shrinkLength);
 		return points;
 	}
 

@@ -15,8 +15,8 @@ namespace GemCraft {
         size_t nFaces() const { return  m_Faces.size(); }
         size_t nEdges() const { return  m_Faces.size() * 3; }
 
-        const std::vector<glm::vec3>& GetVertices() const { return m_Vertices; }
-        const std::vector<std::vector<size_t>>& GetFaces() const { return m_Faces; }
+        std::vector<glm::vec3>& GetVertices() { return m_Vertices; }
+        std::vector<std::vector<size_t>>& GetFaces() { return m_Faces; }
         polyscope::SurfaceMesh* GetPsMesh() const { return m_PsMesh; }
         glm::mat4 GetPsTransform() const { return m_PsMesh ? m_PsMesh->getTransform() : glm::mat4(1.0f); }
         std::string GetName() { return m_Name; }

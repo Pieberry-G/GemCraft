@@ -1,5 +1,6 @@
 #pragma once
 
+#include "EventSystem/Input.h"
 #include "EventSystem/KeyEvent.h"
 
 namespace GemCraft {

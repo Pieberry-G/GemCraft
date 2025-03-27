@@ -49,11 +49,11 @@ namespace Tools {
 						TinyRenderer::RenderTool::SaveRenderResult((outpath / "Render" / filePath.stem()).string() + "_" + std::to_string(i) + ".jpg", 0);
 						TinyRenderer::RenderTool::SaveRenderResult((outpath / "Mask" / filePath.stem()).string() + "_" + std::to_string(i) + ".png", 1);
 					}
-					GC_CORE_INFO("Rendering completed!\n");
+					GC_CORE_INFO("Rendering Done!\n");
 				}
 			}
 		}
-		GC_CORE_INFO("Dataset construction completed!\n");
+		GC_CORE_INFO("Dataset construction Done!\n");
 	}
 
 } //namespace Tools

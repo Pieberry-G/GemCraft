@@ -1,6 +1,11 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.13.0)
  
 add_subdirectory(polyscope)
+add_library(ImGuizmo STATIC "ImGuizmo/ImGuizmo.cpp")
+target_include_directories(ImGuizmo PUBLIC "ImGuizmo")
+target_link_libraries(ImGuizmo PRIVATE imgui)
+target_link_libraries(polyscope PUBLIC ImGuizmo)
+
 add_subdirectory(spdlog)
 add_definitions(-DTINYGLTF_NO_INCLUDE_STB_IMAGE)
 add_definitions(-DTINYGLTF_NO_STB_IMAGE)
@@ -10,6 +15,7 @@ add_subdirectory(tinyobjloader)
 
 set_target_properties(glad PROPERTIES FOLDER "Dependencies")
 set_target_properties(imgui PROPERTIES FOLDER "Dependencies")
+set_target_properties(ImGuizmo PROPERTIES FOLDER "Dependencies")
 set_target_properties(polyscope PROPERTIES FOLDER "Dependencies")
 set_target_properties(spdlog PROPERTIES FOLDER "Dependencies")
 set_target_properties(stb PROPERTIES FOLDER "Dependencies")

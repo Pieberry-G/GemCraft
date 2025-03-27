@@ -3,6 +3,8 @@
 #include "Mesh/Mesh.h"
 #include "Mesh/MeshSubset.h"
 
+#include <CGAL/Polygon_mesh_processing/measure.h>
+
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Shape_detection/Region_growing/Region_growing.h>

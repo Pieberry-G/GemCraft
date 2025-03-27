@@ -4,20 +4,6 @@
 
 namespace GemCraft {
 
-	struct HalfedgeToEdge
-	{
-		HalfedgeToEdge(const CGALMesh& cgalmesh, std::vector<edge_descriptor>& edges)
-			: m_CGALmesh(cgalmesh), m_Edges(edges) {}
-
-		void operator()(const halfedge_descriptor& h) const
-		{
-			m_Edges.push_back(edge(h, m_CGALmesh));
-		}
-
-		const CGALMesh& m_CGALmesh;
-		std::vector<edge_descriptor>& m_Edges;
-	};
-
 	void PaddingMesh::CreatePaddingMesh(const glm::vec3& basePoint, float length, float width, float height, float radius)
 	{
 		glm::vec3 center = basePoint - glm::vec3(0.0f, radius, 0.0f);
@@ -56,7 +42,9 @@ namespace GemCraft {
 
 		double targetEdgeLength = 0.1;
 		std::vector<edge_descriptor> border;
-		CGALpmp::border_halfedges(faces(*cgalPaddingMesh), *cgalPaddingMesh, boost::make_function_output_iterator(HalfedgeToEdge(*cgalPaddingMesh, border)));
+		CGALpmp::border_halfedges(faces(*cgalPaddingMesh), *cgalPaddingMesh, boost::make_function_output_iterator([&](const halfedge_descriptor& h) {
+			border.push_back(edge(h, *cgalPaddingMesh));
+		}));
 		CGALpmp::split_long_edges(border, targetEdgeLength, *cgalPaddingMesh);
 		CGALpmp::isotropic_remeshing(faces(*cgalPaddingMesh), targetEdgeLength, *cgalPaddingMesh,
 			CGAL::parameters::number_of_iterations(10)

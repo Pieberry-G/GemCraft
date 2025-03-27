@@ -3,26 +3,11 @@
 #include "Core/Scene.h"
 #include "Mesh/FormatTool.h"
 #include "TinyRenderer/RenderTool.h"
-#include "Mesh/GeodesicTool.h"
 
 #include <polyscope/polyscope.h>
 #include <filesystem>
 
 namespace GemCraft {
-
-    struct HalfedgeToEdge
-    {
-        HalfedgeToEdge(const CGALMesh& cgalmesh, std::vector<edge_descriptor>& edges)
-            : m_CGALmesh(cgalmesh), m_Edges(edges) {}
-
-        void operator()(const halfedge_descriptor& h) const
-        {
-            m_Edges.push_back(edge(h, m_CGALmesh));
-        }
-
-        const CGALMesh& m_CGALmesh;
-        std::vector<edge_descriptor>& m_Edges;
-    };
 
     static const std::vector<std::array<float, 2>> s_CameraAngles = {
         { 0.0f, 0.0f },
@@ -123,7 +108,7 @@ namespace GemCraft {
             TinyRenderer::RenderTool::SaveRenderResult((renderOutpath / std::filesystem::path(filepath).stem()).string() + "_" + std::to_string(i) + ".jpg", 0);
         }
 
-        GC_CORE_INFO("Completed!");
+        GC_CORE_INFO("Done!");
     }
 
 	void RegionSelectionTool::SegmentMultiviewImages()
@@ -135,7 +120,7 @@ namespace GemCraft {
 		std::filesystem::create_directories("../dataIO/OutputMasks");
 		system("..\\deps\\sam-adapter\\SegmentInfer.bat");
 
-		GC_CORE_INFO("Completed!");
+		GC_CORE_INFO("Done!");
 	}
 
     void RegionSelectionTool::ApplyBackProjection()
@@ -152,7 +137,7 @@ namespace GemCraft {
             TinyRenderer::RenderTool::BackProjection(m_BackProjectionFaces, "../dataIO/OutputMasks/" + std::to_string(i) + ".png");
         }
 
-        GC_CORE_INFO("Completed!");
+        GC_CORE_INFO("Done!");
     }
 
     void RegionSelectionTool::RecognizeGems()
@@ -210,7 +195,7 @@ namespace GemCraft {
             }
         }
 
-        GC_CORE_INFO("Completed!");
+        GC_CORE_INFO("Done!");
 
         // Save regions to a file.
         const std::string fullpath = std::filesystem::path("regions").stem().string() + ".ply";
@@ -292,7 +277,7 @@ namespace GemCraft {
             }
         }
 
-        GC_CORE_INFO("Completed!");
+        GC_CORE_INFO("Done!");
     }
 
     void RegionSelectionTool::SelectRegion()
@@ -344,7 +329,7 @@ namespace GemCraft {
             }
         }
 
-        GC_CORE_INFO("Completed!");
+        GC_CORE_INFO("Done!");
 
         // Save regions to a file.
         const std::string fullpath = std::filesystem::path("regions").stem().string() + ".ply";
@@ -414,7 +399,7 @@ namespace GemCraft {
             }
         }
 
-        GC_CORE_INFO("Completed!");
+        GC_CORE_INFO("Done!");
     }
 
     static size_t FindNearestRegion(std::shared_ptr<CGALMesh>& cgalmesh, const Region_growing::Region_map& map, CGAL::SM_Face_index queryFace)

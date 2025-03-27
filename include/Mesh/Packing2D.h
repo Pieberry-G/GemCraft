@@ -14,11 +14,10 @@ namespace GemCraft {
 	class Packing2D
 	{
 	public:
-		std::vector<glm::vec2> GenerateSquarePacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength);
-		std::vector<glm::vec2> GenerateHexagonalPacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength);
-
-		std::vector<glm::vec2> GenerateCompactPackingOld(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength, float packingEdgeLoopDensity, float packingCenterDensity);
-		std::vector<glm::vec2> GenerateCompactPacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary, float shrinkLength, float packingEdgeLoopDensity, float packingCenterDensity);
+		std::vector<glm::vec2> GenerateSquarePacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary2D, float shrinkLength);
+		std::vector<glm::vec2> GenerateHexagonalPacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary2D, float shrinkLength);
+		std::vector<glm::vec2> GenerateCompactPackingOld(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary2D, float shrinkLength, float packingEdgeLoopDensity, float packingCenterDensity);
+		std::vector<glm::vec2> GenerateCompactPacking(float cellRadius, float gridRotation, const std::vector<glm::vec2>& boundary2D, float shrinkLength, float packingEdgeLoopDensity, float packingCenterDensity);
 	};
 
 } // namespace GemCraft

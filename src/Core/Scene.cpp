@@ -1,11 +1,14 @@
 #include "Core/Scene.h"
 
-#include "Mesh/GeodesicTool.h"
+#include "Core/State.h"
+
 #include "Mesh/SurfaceCleanerTool.h"
 #include "Mesh/RegionSelectionTool.h"
 #include "Mesh/GeometryTool.h"
 #include "Mesh/PlacementTool.h"
 #include "Mesh/BooleanTool.h"
+
+#include "Mesh/NurbsFitting.h"
 
 namespace GemCraft {
 
@@ -20,6 +23,9 @@ namespace GemCraft {
 		m_GeometryTool = std::make_unique<GeometryTool>(this);
 		m_PlacementTool = std::make_unique<PlacementTool>(this);
 		m_BooleanTool = std::make_unique<BooleanTool>();
+
+		//m_Nurbs = std::make_shared<NurbsFitting>("Bunny");
+		//m_Nurbs->AddToPolyscope();
 	}
 
 	void Scene::Clean()
@@ -29,7 +35,6 @@ namespace GemCraft {
 		m_RingPath = "";
 		m_Ring = nullptr;
 		m_Meshes.clear();
-		m_GemLines.clear();
 		m_GemGroups.clear();
 
 		m_SurfaceCleanerTool->Clean();
@@ -67,12 +72,10 @@ namespace GemCraft {
 	bool Scene::OnRender(AppRenderEvent& e)
 	{
 		static const std::unordered_map<std::string, std::function<void()>> functionMap = {
-			{ "ShowRingStroke",		     GC_BIND_EVENT_FN(Scene::ShowRingStroke)		  },
-			{ "ShowSelectedRegion",      GC_BIND_EVENT_FN(Scene::ShowSelectedRegion)	  },
+			{ "ImGuizmoUsed",			 GC_BIND_EVENT_FN(Scene::OnImGuizmoUsed)		  },
 			{ "InteractiveSphereSelect", GC_BIND_EVENT_FN(Scene::InteractiveSphereSelect) },
 			{ "InteractiveFillRegion",   GC_BIND_EVENT_FN(Scene::InteractiveFillRegion)   },
-			{ "ShowSourcePoint",	     GC_BIND_EVENT_FN(Scene::ShowSourcePoint)	      },
-			{ "ShowTargetPoint",	     GC_BIND_EVENT_FN(Scene::ShowTargetPoint)	      },
+			{ "ShowSelectedRegion",      GC_BIND_EVENT_FN(Scene::ShowSelectedRegion)	  },
 		};
 
 		std::string command = e.GetCommand();
@@ -84,11 +87,6 @@ namespace GemCraft {
 			GC_CORE_ERROR("Could not find the relevant function!");
 			return false;
 		}
-	}
-
-	void Scene::InitGeodesic()
-	{
-		m_GeodesicTool = std::make_unique<GeodesicTool>(m_Ring);
 	}
 
 	void Scene::AddRing(const std::string& name, const std::string& filepath)
@@ -121,7 +119,6 @@ namespace GemCraft {
 		m_GeometryTool->RepairGeometry();
 		m_GeometryTool->ShowResult();
 
-		InitGeodesic();
 		m_PlacementTool->BuildSubmeshForSelectedRegion();
 		m_PlacementTool->ShowResult();
 	}
@@ -142,9 +139,6 @@ namespace GemCraft {
 	{
 		glm::mat4 transform = m_Ring->GetPsTransform();
 		m_Ring->RemoveFromPolyscope();
-		for (auto& gemLine : m_GemLines) {
-			m_Ring = m_BooleanTool->DifferenceOperation(m_Ring, gemLine);
-		}
 		for (auto& gemGroup : m_GemGroups) {
 			m_Ring = m_BooleanTool->DifferenceOperation(m_Ring, gemGroup);
 		}
@@ -189,6 +183,23 @@ namespace GemCraft {
 		m_GemGroups.push_back(gemGroup);
 	}
 
+	void Scene::OnImGuizmoUsed()
+	{
+		polyscope::PointCloud* controlPoint = dynamic_cast<polyscope::PointCloud*>(polyscope::state::selectedStructure);
+		if (controlPoint) {
+			if (State::controlPointToNurbs.find(controlPoint) != State::controlPointToNurbs.end()) {
+				NurbsFitting* nurbsFitting = State::controlPointToNurbs[controlPoint];
+				nurbsFitting->UpdateControlPoint();
+
+				m_PlacementTool->UpdateRegionSubmesh();
+			}
+			if (State::controlPointToDeformation.find(controlPoint) != State::controlPointToDeformation.end()) {
+				MeshDeformation* deformation = State::controlPointToDeformation[controlPoint];
+				deformation->UpdateControlPoint();
+			}
+		}
+	}
+
 	void Scene::InteractiveSphereSelect()
 	{
 		m_RegionSelectionTool->InteractiveSphereSelect();
@@ -199,21 +210,6 @@ namespace GemCraft {
 	{
 		m_RegionSelectionTool->InteractiveFillRegion();
 		m_RegionSelectionTool->ShowResult();
-	}
-
-	void Scene::ShowRingStroke()
-	{
-		float strokelinesRadius = 0.002f;
-
-		std::vector<glm::vec3>& positions = polyscope::state::strokePosition;
-		std::vector<std::array<size_t, 2>> edgeInds;
-		for (size_t i = 1; i < positions.size(); i++) {
-			edgeInds.push_back({ i - 1, i });
-		}
-		polyscope::SurfaceGraphQuantity* strokelines = m_Ring->GetPsMesh()->addSurfaceGraphQuantity("Stroke", positions, edgeInds);
-		strokelines->setEnabled(true);
-		strokelines->setRadius(strokelinesRadius);
-		strokelines->setColor({ 0.0, 0.0, 0.0 });
 	}
 
 	void Scene::ShowSelectedRegion()
@@ -228,32 +224,6 @@ namespace GemCraft {
 		}
 		polyscope::SurfaceFaceColorQuantity* showFaces = m_Ring->GetPsMesh()->addFaceColorQuantity("selected region", faceColors);
 		showFaces->setEnabled(true);
-	}
-
-	void Scene::ShowSourcePoint()
-	{
-		float vertexRadius = 0.01f;
-		std::vector<glm::vec3> vertPos;
-		std::vector<std::array<size_t, 2>> vertInd;
-		vertPos.push_back(polyscope::state::startPath);
-
-		polyscope::SurfaceGraphQuantity* showVerts = m_Ring->GetPsMesh()->addSurfaceGraphQuantity("source point", vertPos, vertInd);
-		showVerts->setEnabled(true);
-		showVerts->setRadius(vertexRadius);
-		showVerts->setColor({0.0f, 0.0f, 1.0f});
-	}
-
-	void Scene::ShowTargetPoint()
-	{
-		float vertexRadius = 0.01f;
-		std::vector<glm::vec3> vertPos;
-		std::vector<std::array<uint32_t, 2>> vertInd;
-		vertPos.push_back(polyscope::state::endPath);
-
-		polyscope::SurfaceGraphQuantity* showVerts = m_Ring->GetPsMesh()->addSurfaceGraphQuantity("target point", vertPos, vertInd);
-		showVerts->setEnabled(true);
-		showVerts->setRadius(vertexRadius);
-		showVerts->setColor({1.0f, 0.0f, 0.0f});
 	}
 
 } // namespace GemCraft

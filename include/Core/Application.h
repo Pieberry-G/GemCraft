@@ -6,6 +6,7 @@
 
 #include "EventSystem/ApplicationEvent.h"
 #include "EventSystem/KeyEvent.h"
+#include "EventSystem/MouseEvent.h"
 
 namespace GemCraft {
 

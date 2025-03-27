@@ -36,31 +36,28 @@ namespace GemCraft {
 		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
 
 		// Generate Packing
-		Packing2D packing2D;
 		float gemScale = gemPatternUI.GetGemScale();
 		bool enableHoleShrink = gemPatternUI.GetEnableHoleShrink();
 		float holeShrinkLength = gemPatternUI.GetHoleShrinkLength();
 		float gridRotation = glm::radians(gemPatternUI.GetGridRotation());
-		std::vector<glm::vec2> boundary = m_Submesh->GetBoundary();
 
-		std::vector<glm::vec2> targetPoints;
+		std::pair<std::vector<glm::vec3>, std::vector<glm::vec3>> positionsAndNormals;
 		float cellRadius = 0.6f * gemScale;
 		float shrinkLength = holeShrinkLength + 0.1f * cellRadius;
 		if (!enableHoleShrink) {
 			shrinkLength = 0.1f * cellRadius;
 		}
 		if (gemPatternUI.GetCurSelectedPackingMode() == PackingMode::Hexagonal) {
-			targetPoints = packing2D.GenerateHexagonalPacking(cellRadius, gridRotation, boundary, 0.0f);
+			positionsAndNormals = m_Submesh->GenerateHexagonalPacking(cellRadius, gridRotation, 0.0f);
 		}
 		else if (gemPatternUI.GetCurSelectedPackingMode() == PackingMode::Square) {
-			targetPoints = packing2D.GenerateSquarePacking(cellRadius, gridRotation, boundary, shrinkLength);
+			positionsAndNormals = m_Submesh->GenerateSquarePacking(cellRadius, gridRotation, shrinkLength);
 		}
 		else if (gemPatternUI.GetCurSelectedPackingMode() == PackingMode::Compact) {
-			targetPoints = packing2D.GenerateCompactPacking(cellRadius, gridRotation, boundary, shrinkLength, gemPatternUI.GetPackingEdgeLoopDensity(), gemPatternUI.GetPackingCenterDensity());
+			positionsAndNormals = m_Submesh->GenerateCompactPacking(cellRadius, gridRotation, shrinkLength, gemPatternUI.GetPackingEdgeLoopDensity(), gemPatternUI.GetPackingCenterDensity());
 		}
 
-		std::vector<glm::vec3> positions = m_Submesh->Map2DPointsTo3D(targetPoints);
-		return PlaceGemsOnPositions(positions);
+		return PlaceGemsOnPositions(positionsAndNormals.first, positionsAndNormals.second);
 	}
 
 	GemGroup PlacementTool::PlaceGemsAtTargets()
@@ -175,9 +172,8 @@ namespace GemCraft {
 		return PlaceGemSetting(spec.Name, spec.SettingType, transform);
 	}
 
-	GemGroup PlacementTool::PlaceGemsOnPositions(const std::vector<glm::vec3>& positions)
+	GemGroup PlacementTool::PlaceGemsOnPositions(const std::vector<glm::vec3>& positions, const std::vector<glm::vec3>& normals)
 	{
-		const std::unique_ptr<GeodesicTool>& geodesic = m_Scene->m_GeodesicTool;
 		const GemSettingSelectionUI& gemSettingSelectionUI = m_Scene->m_GemSettingSelectionUI;
 		const GemPatternUI& gemPatternUI = m_Scene->m_GemPatternUI;
 
@@ -193,7 +189,7 @@ namespace GemCraft {
 			GemSpecification spec;
 			spec.SettingType = settingType;
 			spec.Position = positions[i];
-			spec.Normal = geodesic->CalculateNormal(spec.Position);
+			spec.Normal = normals[i];
 
 			glm::vec3 v;
 			if (std::abs(spec.Normal.x) < std::abs(spec.Normal.y)) {
@@ -216,7 +212,7 @@ namespace GemCraft {
 			GemSettingSpecification spec;
 			spec.SettingType = settingType;
 			spec.Position = positions[i];
-			spec.Normal = geodesic->CalculateNormal(spec.Position);
+			spec.Normal = normals[i];
 
 			glm::vec3 v;
 			if (std::abs(spec.Normal.x) < std::abs(spec.Normal.y)) {

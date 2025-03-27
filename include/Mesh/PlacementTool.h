@@ -44,6 +44,8 @@ namespace GemCraft {
 		GemGroup PlaceGemsOnSelectedRegion();
 		GemGroup PlaceGemsAtTargets();
 
+		void UpdateRegionSubmesh() { m_Submesh->UpdateByNurbsFitting(); }
+
 		void ShowResult();
 		void ShowBooleanMesh();
 
@@ -54,7 +56,7 @@ namespace GemCraft {
 		std::shared_ptr<Mesh> PlaceGemSetting(const std::string& name, GemSettingType settingType, const glm::mat4& transform = glm::mat4(1.0f));
 		std::shared_ptr<Mesh> PlaceGemSetting(GemSettingSpecification spec);
 	
-		GemGroup PlaceGemsOnPositions(const std::vector<glm::vec3>& positions);
+		GemGroup PlaceGemsOnPositions(const std::vector<glm::vec3>& positions, const std::vector<glm::vec3>& normals);
 
 	private:
 		std::shared_ptr<RegionSubmesh> m_Submesh;

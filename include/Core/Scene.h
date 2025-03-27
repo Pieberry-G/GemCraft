@@ -5,14 +5,18 @@
 #include "Mesh/GemGroup.h"
 #include "Panels/CustomUI.h"
 
+#include "EventSystem/ApplicationEvent.h"
+#include "EventSystem/KeyEvent.h"
+#include "EventSystem/MouseEvent.h"
+
 namespace GemCraft {
 
-	class GeodesicTool;
 	class SurfaceCleanerTool;
 	class RegionSelectionTool;
 	class GeometryTool;
 	class PlacementTool;
 	class BooleanTool;
+	class NurbsFitting;
 
 	class Scene
 	{
@@ -25,7 +29,6 @@ namespace GemCraft {
 		void Clean();
 		bool OnKeyReleased(KeyReleasedEvent& e);
 		bool OnRender(AppRenderEvent& e);
-		void InitGeodesic();
 
 		void AddRing(const std::string& name, const std::string& filepath);
 		std::string GetRingPath() { return m_RingPath; }
@@ -53,24 +56,18 @@ namespace GemCraft {
 		void AutoRecognizeGems();
 		void PlaceGemsAtTargets();
 
+		void OnImGuizmoUsed();
 		void InteractiveSphereSelect();
 		void InteractiveFillRegion();
-
-		void ShowRingStroke();
 		void ShowSelectedRegion();
-		void ShowSourcePoint();
-		void ShowTargetPoint();
 
 	private:
 		std::string m_RingPath;
 		std::shared_ptr<Mesh> m_Ring;
 		std::vector<std::shared_ptr<Mesh>> m_Meshes;
+		std::shared_ptr<NurbsFitting> m_Nurbs;
 
-		std::vector<GemLine> m_GemLines;
 		std::vector<GemGroup> m_GemGroups;
-
-		std::unique_ptr<GeodesicTool> m_GeodesicTool;
-		Path m_GeodesicPath;
 
 		GemSettingSelectionUI m_GemSettingSelectionUI;
 		GemPatternUI m_GemPatternUI;

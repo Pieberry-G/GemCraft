@@ -42,12 +42,10 @@ namespace GemCraft {
 		CGAL::Cartesian_converter<ExactKernel, Kernel> to_input;
 
 		Exact_vertex_point_map()
-			: tm_ptr(nullptr)
-		{}
+			: tm_ptr(nullptr) {}
 
 		Exact_vertex_point_map(const Exact_point_map& ep, CGALMesh& tm)
-			: exact_point_map(ep)
-			, tm_ptr(&tm)
+			: exact_point_map(ep), tm_ptr(&tm)
 		{
 			for (CGALMesh::Vertex_index v : vertices(tm))
 				exact_point_map[v] = to_exact(tm.point(v));
@@ -74,11 +72,10 @@ namespace GemCraft {
 	{
 	public:
 		std::shared_ptr<Mesh> DifferenceOperation(std::shared_ptr<Mesh>& ring, std::shared_ptr<Mesh>& meshToSubtract);
-		std::shared_ptr<Mesh> DifferenceOperation(std::shared_ptr<Mesh>& ring, GemLine& gemLine);
 		std::shared_ptr<Mesh> DifferenceOperation(std::shared_ptr<Mesh>& ring, GemGroup& gemGroup);
 
 	private:
-		std::shared_ptr<CGALMesh> ConstructContexHull(std::shared_ptr<CGALMesh> mesh);
+		std::shared_ptr<CGALMesh> ConstructContexHull(std::shared_ptr<CGALMesh>& mesh);
 	};
 
 } // namespace GemCraft

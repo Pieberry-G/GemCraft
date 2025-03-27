@@ -16,3 +16,6 @@
 [submodule "deps/sam-adapter/SAM-Adapter-PyTorch"]
 	path = deps/sam-adapter/SAM-Adapter-PyTorch
 	url = https://github.com/tianrun-chen/SAM-Adapter-PyTorch.git
+[submodule "deps/ImGuizmo"]
+	path = deps/ImGuizmo
+	url = https://github.com/Pieberry-G/ImGuizmo.git

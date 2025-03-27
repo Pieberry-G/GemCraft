@@ -2,6 +2,7 @@
 
 #include "Mesh/Mesh.h"
 #include "Mesh/MeshSubset.h"
+#include "Mesh/NurbsFitting.h"
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
@@ -10,6 +11,9 @@
 #include <CGAL/Polygon_mesh_processing/repair.h>
 #include <CGAL/Polygon_mesh_processing/smooth_shape.h>
 #include <CGAL/Shape_detection/Region_growing/Polygon_mesh.h>
+
+#include <CGAL/Polygon_mesh_processing/corefinement.h>
+#include <CGAL/Polygon_mesh_processing/stitch_borders.h>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel		Kernel;
 typedef Kernel::Point_3											CGALPoint;
@@ -39,8 +43,8 @@ namespace GemCraft {
 		void RepairGeometry();
 		void ShowResult();
 
-	private:
 		void RemoveSelectedRegion();
+	private:
 		void FillHoles();
 
 	private:
@@ -48,7 +52,7 @@ namespace GemCraft {
 		std::shared_ptr<Mesh> m_HollowedMesh;
 		std::shared_ptr<Mesh> m_PatchedMesh;
 
-		std::vector<float> m_Distance;
+		std::shared_ptr<NurbsFitting> m_NurbsFitting;
 
 	private:
 		Scene* m_Scene;

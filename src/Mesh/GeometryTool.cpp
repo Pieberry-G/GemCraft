@@ -14,7 +14,6 @@ namespace GemCraft {
     {
         m_HollowedMesh = nullptr;
         m_PatchedMesh = nullptr;
-        m_Distance.clear();
     }
 
     void GeometryTool::RepairGeometry()
@@ -38,8 +37,8 @@ namespace GemCraft {
             toDelete[index] = true;
         }
 
-        std::vector<glm::vec3> vertices = ring->GetVertices();
-        std::vector<std::vector<size_t>> faces = ring->GetFaces();
+        const std::vector<glm::vec3>& vertices = ring->GetVertices();
+        const std::vector<std::vector<size_t>>& faces = ring->GetFaces();
         std::vector<std::vector<size_t>> newFaces;
 
         for (size_t i = 0; i < faces.size(); i++) {
@@ -56,7 +55,7 @@ namespace GemCraft {
         m_HollowedMesh = FormatTool::CGALMeshToMesh(newcgalmesh, inverseTransform);
         m_HollowedMesh->SetName("RemoveSelectedRegion");
 
-        GC_CORE_INFO("Completed!");
+        GC_CORE_INFO("Done!");
     }
 
     void GeometryTool::FillHoles()
@@ -120,12 +119,12 @@ namespace GemCraft {
         }
         GC_CORE_TRACE("{0} holes have been filled.", nbHoles);
 
-        CGALpmp::smooth_shape(*cgalmesh, 0.0002, CGAL::parameters::number_of_iterations(10));
+        //CGALpmp::smooth_shape(*cgalmesh, 0.0002, CGAL::parameters::number_of_iterations(10));
 
         m_PatchedMesh = FormatTool::CGALMeshToMesh(cgalmesh, inverseTransform);
         m_PatchedMesh->SetName("FillHole");
 
-        GC_CORE_INFO("Completed!");
+        GC_CORE_INFO("Done!");
     }
 
     void GeometryTool::ShowResult()
